@@ -144,7 +144,7 @@ void WordMemorizer::setupUi() {
   m_editWordInput->setObjectName("m_editWordInput");
   m_editPrioritySpin = new QSpinBox;
   m_editPrioritySpin->setObjectName("m_editPrioritySpin");
-  m_editPrioritySpin->setRange(1, 20);
+  m_editPrioritySpin->setRange(0, 100);
   m_editPrioritySpin->setValue(1);
   wordFormLayout->addRow("单词:", m_editWordInput);
   wordFormLayout->addRow("优先级:", m_editPrioritySpin);
@@ -194,7 +194,7 @@ void WordMemorizer::setupUi() {
   m_practiceModeCombo->addItem("给出释义，填写单词");
   m_wordCountSpin = new QSpinBox;
   m_wordCountSpin->setObjectName("m_wordCountSpin");
-  m_wordCountSpin->setRange(1, 80);
+  m_wordCountSpin->setRange(1, std::numeric_limits<int>::max());
   m_wordCountSpin->setValue(5);
   modeLayout->addWidget(m_practiceModeCombo);
   modeLayout->addWidget(m_wordCountSpin);
