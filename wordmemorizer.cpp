@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #define STYLE_FILE_PATH ":/styles/main.qss"
+#define DATA_FILE_NAME "words.json"
 
 WordMemorizer::WordMemorizer(QWidget* parent)
     : QMainWindow(parent),
@@ -32,14 +33,19 @@ WordMemorizer::WordMemorizer(QWidget* parent)
       m_editWordAction(nullptr),
       m_deleteWordAction(nullptr),
       m_editDialog(nullptr) {
-    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir dir(dataDir);
-    if (!dir.exists() && !dir.mkpath(".")) {
-        QMessageBox::critical(this, "错误", "创建数据目录失败");
+    QString writePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (writePath.isEmpty()) {
+        QMessageBox::critical(this, "错误", "获取写入目录失败");
         return;
     }
 
-    QString dataFile = dir.absoluteFilePath("words.json");
+    QDir writeDir(writePath);
+    if (!writeDir.exists() && !writeDir.mkpath(".")) {
+        QMessageBox::critical(this, "错误", "创建写入目录失败");
+        return;
+    }
+
+    QString dataFile = writeDir.absoluteFilePath(DATA_FILE_NAME);
     m_db = WordDatabase(dataFile);
     std::optional<WordDatabaseError> err = m_db.loadFromFile();
     if (err) {
