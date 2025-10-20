@@ -2,6 +2,7 @@
 #define WORDMEMORIZER_H
 
 #include <QComboBox>
+#include <QCompleter>
 #include <QElapsedTimer>
 #include <QEvent>
 #include <QGroupBox>
@@ -16,6 +17,7 @@
 #include <QPropertyAnimation>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QStringListModel>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
 #include <QVBoxLayout>
@@ -91,6 +93,7 @@ class WordMemorizer : public QMainWindow {
   void onCurrentItemChanged(QListWidgetItem* current,
                             QListWidgetItem* previous);
   void onSortOrderChanged();
+  void onSearchEditReturnPressed();
 
  private:
   void setupUi();
@@ -100,6 +103,11 @@ class WordMemorizer : public QMainWindow {
   void startModeDefToWord();
   void endPractice();
   void updateTimerDisplay();
+  void syncWordListDataCacheFromDb();
+  void syncAndUpdateWordList();
+  void loadSearchCompleterModel();
+  void updateSearchCompleterModel(const QString& oldWord,
+                                  const QString& newWord);
 
   WordDatabase m_db;
 
@@ -114,6 +122,12 @@ class WordMemorizer : public QMainWindow {
   QPushButton* m_deleteButton;
 
   // 单词列表
+  bool m_isSearching;
+  QPushButton* m_searchCancelButton;
+  QLineEdit* m_searchEdit;
+  QCompleter* m_searchCompleter;
+  QStringListModel* m_searchModel;
+  QVector<std::tuple<qsizetype, const WordEntry*>> m_wordListDataCache;
   QComboBox* m_wordListSortOrderCombo;
   SortOrder m_wordListSortOrder;
   QListWidget* m_wordListWidget;

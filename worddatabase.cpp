@@ -43,6 +43,18 @@ bool WordDatabase::containsWord(const QString& word) const {
   return false;
 }
 
+QVector<std::tuple<qsizetype, const WordEntry*>> WordDatabase::queryWords(
+    const QString& query) const {
+  QVector<std::tuple<qsizetype, const WordEntry*>> results;
+  for (qsizetype i = 0; i < m_words.size(); ++i) {
+    const WordEntry* entry = &m_words[i];
+    if (entry->word.contains(query)) {
+      results.append({i, entry});
+    }
+  }
+  return results;
+}
+
 std::optional<WordDatabaseError> WordDatabase::removeWord(const QString& word) {
   for (qsizetype i = 0; i < m_words.size(); ++i) {
     if (m_words[i].word == word) {

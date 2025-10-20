@@ -23,8 +23,10 @@ WordMemorizer::WordMemorizer(QWidget* parent)
       m_currentIndex(-1),
       m_correctCount(0),
       m_totalQuestions(0),
+      m_isSearching(false),
       m_currentMode(PracticeMode::WordToDefinition),
       m_wordListSortOrder(SortOrder::CreationTimeAsc),
+      m_wordListDataCache(),
       m_elapsedSeconds(0),
       m_wordListContextMenu(nullptr),
       m_editWordAction(nullptr),
@@ -47,7 +49,8 @@ WordMemorizer::WordMemorizer(QWidget* parent)
 
   setupUi();
   setupStyle();
-  updateWordList();
+  syncAndUpdateWordList();
+  loadSearchCompleterModel();
 }
 
 void WordMemorizer::onCurrentItemChanged(QListWidgetItem* curr,
@@ -68,6 +71,32 @@ void WordMemorizer::onCurrentItemChanged(QListWidgetItem* curr,
 void WordMemorizer::onSortOrderChanged() {
   m_wordListSortOrder =
       static_cast<SortOrder>(m_wordListSortOrderCombo->currentIndex());
+  updateWordList();
+}
+
+void WordMemorizer::onSearchEditReturnPressed() {
+  QString searchText = m_searchEdit->text().trimmed();
+
+  if (searchText.isEmpty() && m_isSearching) {
+    m_isSearching = false;
+    m_searchCancelButton->setHidden(true);
+    syncAndUpdateWordList();
+    return;
+  }
+
+  auto results = m_db.queryWords(searchText);
+  if (results.isEmpty()) {
+    m_wordListWidget->clear();
+    QMessageBox::information(this, "提示", "未找到匹配单词");
+    return;
+  }
+
+  if (!m_isSearching) {
+    m_isSearching = true;
+    m_searchCancelButton->setHidden(false);
+  }
+
+  m_wordListDataCache = results;
   updateWordList();
 }
 
@@ -113,6 +142,57 @@ void WordMemorizer::setupUi() {
   // 单词列表
   m_wordListWidget = new QListWidget;
   m_wordListWidget->setObjectName("m_wordListWidget");
+  // 搜索框
+  m_searchCancelButton = new QPushButton("取消");
+  m_searchCancelButton->setObjectName("m_searchCancelButton");
+  m_searchCancelButton->setHidden(true);
+  m_searchEdit = new QLineEdit;
+  m_searchEdit->setObjectName("m_searchEdit");
+  m_searchEdit->setClearButtonEnabled(true);
+  QHBoxLayout* searchLayout = new QHBoxLayout;
+  searchLayout->addWidget(m_searchEdit);
+  searchLayout->addWidget(m_searchCancelButton);
+  m_searchCompleter = new QCompleter(this);
+  m_searchCompleter->setObjectName("m_searchCompleter");
+  m_searchCompleter->setCompletionMode(QCompleter::PopupCompletion);
+  m_searchCompleter->setFilterMode(Qt::MatchContains);
+  m_searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+  m_searchModel = new QStringListModel(this);
+  m_searchCompleter->setModel(m_searchModel);
+  m_searchEdit->setCompleter(m_searchCompleter);
+
+  if (QListView* popup = qobject_cast<QListView*>(m_searchCompleter->popup())) {
+    popup->setStyleSheet(R"(
+        QListView {
+            border: 2px solid #dcdfe6;
+            border-radius: 6px;
+            background-color: white;
+            color: #2c3e50;
+            font-size: 14px;
+            outline: none;
+            padding: 0px;
+            margin: 0px;
+            max-height: 200px;
+        }
+        QListView::item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ebeef5;
+        }
+        QListView::item:last {
+            border-bottom: none;
+        }
+        QListView::item:selected {
+            background-color: #ecf5ff;
+            color: #409eff;
+            border: 1px solid #409eff;
+            border-radius: 4px;
+        }
+        QListView::item:hover {
+            background-color: #f5f7fa;
+        }
+    )");
+  }
+
   // 单词列表排序方式
   m_wordListSortOrderCombo = new QComboBox;
   m_wordListSortOrderCombo->setObjectName("m_wordListSortOrderCombo");
@@ -123,6 +203,7 @@ void WordMemorizer::setupUi() {
   m_wordListSortOrderCombo->addItem("按优先级升序");
   m_wordListSortOrderCombo->addItem("按优先级降序");
   QVBoxLayout* wordListLayout = new QVBoxLayout;
+  wordListLayout->addLayout(searchLayout);
   wordListLayout->addWidget(m_wordListSortOrderCombo);
   wordListLayout->addWidget(m_wordListWidget);
   // 为单词列表添加上下文菜单
@@ -252,6 +333,12 @@ void WordMemorizer::setupUi() {
   mainLayout->addWidget(practiceOptionsGroup);
   mainLayout->addWidget(practiceGroup);
 
+  connect(m_searchCancelButton, &QPushButton::clicked, this, [this]() {
+    m_searchEdit->clear();
+    onSearchEditReturnPressed();
+  });
+  connect(m_searchEdit, &QLineEdit::returnPressed, this,
+          &WordMemorizer::onSearchEditReturnPressed);
   connect(m_wordListSortOrderCombo, &QComboBox::currentIndexChanged, this,
           &WordMemorizer::onSortOrderChanged);
   connect(m_addDefinitionButton, &QPushButton::clicked, this, [this]() {
@@ -329,6 +416,39 @@ void WordMemorizer::updateTimerDisplay() {
   m_practiceTimerLabel->setText(timeText);
 }
 
+void WordMemorizer::syncWordListDataCacheFromDb() {
+  const QVector<WordEntry>& words = m_db.getWords();
+  m_wordListDataCache.clear();
+  for (qsizetype i = 0; i < words.size(); ++i) {
+    m_wordListDataCache.append({i, &words[i]});
+  }
+}
+
+void WordMemorizer::syncAndUpdateWordList() {
+  syncWordListDataCacheFromDb();
+  updateWordList();
+}
+
+void WordMemorizer::loadSearchCompleterModel() {
+  const QVector<WordEntry>& words = m_db.getWords();
+  QStringList wordList;
+  for (const WordEntry& entry : words) {
+    wordList << entry.word;
+  }
+  m_searchModel->setStringList(wordList);
+}
+
+void WordMemorizer::updateSearchCompleterModel(const QString& oldWord,
+                                               const QString& newWord) {
+  if (oldWord.isEmpty()) return;
+  if (oldWord == newWord) return;
+  QStringList wordList = m_searchModel->stringList();
+  int row = wordList.indexOf(oldWord);
+  if (row == -1) return;
+  QModelIndex idx = m_searchModel->index(row);
+  m_searchModel->setData(idx, newWord, Qt::EditRole);
+}
+
 void WordMemorizer::onAddWord() {
   QString word = m_wordEdit->text().trimmed();
 
@@ -363,7 +483,7 @@ void WordMemorizer::onAddWord() {
     return;
   }
 
-  updateWordList();
+  syncAndUpdateWordList();
   m_wordEdit->clear();
   m_definitionListWidget->clear();
   m_definitionEdit->clear();
@@ -397,8 +517,8 @@ void WordMemorizer::onDeleteWord() {
       return;
     }
 
-    updateWordList();
     QMessageBox::information(this, "成功", "单词删除成功");
+    syncAndUpdateWordList();
   }
 }
 
@@ -567,30 +687,24 @@ void WordMemorizer::onExitPractice() {
 }
 
 void WordMemorizer::updateWordList() {
-  const QVector<WordEntry>& words = m_db.getWords();
-
-  QVector<std::tuple<qsizetype, const WordEntry*>> sortedWords;
-  for (qsizetype i = 0; i < words.size(); ++i)
-    sortedWords.append({i, &words[i]});
-
   switch (m_wordListSortOrder) {
     default:
     case SortOrder::CreationTimeAsc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->createdAt < std::get<1>(b)->createdAt;
                 });
       break;
     case SortOrder::CreationTimeDesc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->createdAt > std::get<1>(b)->createdAt;
                 });
       break;
     case SortOrder::ModifiedAtAsc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->modifiedAt <
@@ -598,7 +712,7 @@ void WordMemorizer::updateWordList() {
                 });
       break;
     case SortOrder::ModifiedAtDesc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->modifiedAt >
@@ -606,14 +720,14 @@ void WordMemorizer::updateWordList() {
                 });
       break;
     case SortOrder::PriorityAsc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->priority < std::get<1>(b)->priority;
                 });
       break;
     case SortOrder::PriorityDesc:
-      std::sort(sortedWords.begin(), sortedWords.end(),
+      std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
                 [](const std::tuple<qsizetype, const WordEntry*>& a,
                    const std::tuple<qsizetype, const WordEntry*>& b) {
                   return std::get<1>(a)->priority > std::get<1>(b)->priority;
@@ -622,10 +736,9 @@ void WordMemorizer::updateWordList() {
   }
 
   m_wordListWidget->clear();
-  for (qsizetype i = 0; i < sortedWords.size(); ++i) {
-    const WordEntry* entry = std::get<1>(sortedWords[i]);
+  for (const auto& [index, entry] : m_wordListDataCache) {
     QListWidgetItem* item = new QListWidgetItem(entry->word);
-    QVariant value = static_cast<qulonglong>(std::get<0>(sortedWords[i]));
+    QVariant value = static_cast<qulonglong>(index);
     item->setData(Qt::UserRole, value);
     m_wordListWidget->addItem(item);
   }
@@ -694,7 +807,7 @@ void WordMemorizer::onSaveWordEdit() {
     return;
   }
 
-  updateWordList();
+  syncAndUpdateWordList();
   m_editDialog->hide();
 }
 

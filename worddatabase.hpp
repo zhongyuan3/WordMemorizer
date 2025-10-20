@@ -5,6 +5,7 @@
 #include <QString>
 #include <QVector>
 #include <optional>
+#include <unordered_set>
 
 struct WordEntry {
   QString word;
@@ -25,6 +26,8 @@ class WordDatabase {
   const QVector<WordEntry>& getWords() const { return m_words; }
   int wordCount() const { return m_words.size(); }
   bool containsWord(const QString& word) const;
+  QVector<std::tuple<qsizetype, const WordEntry*>> queryWords(
+      const QString& query) const;
   std::optional<WordDatabaseError> addWord(const QString& word,
                                            const QString& definition,
                                            int priority);
