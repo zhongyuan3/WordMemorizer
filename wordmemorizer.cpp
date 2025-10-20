@@ -49,7 +49,7 @@ WordMemorizer::WordMemorizer(QWidget* parent)
     m_db = WordDatabase(dataFile);
     std::optional<WordDatabaseError> err = m_db.loadFromFile();
     if (err) {
-        QMessageBox::critical(this, "错误", err.value());
+        QMessageBox::critical(this, "错误", err.value().message());
     }
 
     setupUi();
@@ -396,7 +396,7 @@ void WordMemorizer::setupUi() {
             &QPushButton::click);
     connect(qApp, &QApplication::aboutToQuit, this, [this]() {
         std::optional<WordDatabaseError> err = m_db.saveToFile();
-        if (err) QMessageBox::critical(this, "错误", err.value());
+        if (err) QMessageBox::critical(this, "错误", err.value().message());
     });
 }
 
@@ -463,13 +463,13 @@ void WordMemorizer::onAddWord() {
 
     std::optional<WordDatabaseError> err = m_db.addWord(word, definition, m_prioritySpin->value());
     if (err) {
-        QMessageBox::warning(this, "添加失败", err.value(), QMessageBox::Ok);
+        QMessageBox::warning(this, "添加失败", err.value().message(), QMessageBox::Ok);
         return;
     }
 
     err = m_db.saveToFile();
     if (err) {
-        QMessageBox::warning(this, "保存失败", err.value(), QMessageBox::Ok);
+        QMessageBox::warning(this, "保存失败", err.value().message(), QMessageBox::Ok);
         return;
     }
 
@@ -495,13 +495,13 @@ void WordMemorizer::onDeleteWord() {
     if (reply == QMessageBox::Yes) {
         std::optional<WordDatabaseError> err = m_db.removeWord(word);
         if (err) {
-            QMessageBox::warning(this, "删除失败", err.value(), QMessageBox::Ok);
+            QMessageBox::warning(this, "删除失败", err.value().message(), QMessageBox::Ok);
             return;
         }
 
         err = m_db.saveToFile();
         if (err) {
-            QMessageBox::warning(this, "保存失败", err.value(), QMessageBox::Ok);
+            QMessageBox::warning(this, "保存失败", err.value().message(), QMessageBox::Ok);
             return;
         }
 
@@ -777,13 +777,13 @@ void WordMemorizer::onSaveWordEdit() {
     std::optional<WordDatabaseError> err =
         m_db.updateWord(m_editingOriginalWord, newWord, newDefinition, newPriority);
     if (err) {
-        QMessageBox::warning(this, "修改失败", err.value());
+        QMessageBox::warning(this, "修改失败", err.value().message());
         return;
     }
 
     err = m_db.saveToFile();
     if (err) {
-        QMessageBox::warning(this, "保存失败", err.value());
+        QMessageBox::warning(this, "保存失败", err.value().message());
         return;
     }
 

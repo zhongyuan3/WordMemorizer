@@ -15,7 +15,17 @@ struct WordEntry {
     int priority;
 };
 
-using WordDatabaseError = QString;
+class WordDatabaseError {
+public:
+    WordDatabaseError() = default;
+    WordDatabaseError(const QString& message) : m_message(message) {}
+    ~WordDatabaseError() = default;
+
+    const QString& message() const { return m_message; }
+
+private:
+    QString m_message;
+};
 
 class WordDatabase {
 public:
