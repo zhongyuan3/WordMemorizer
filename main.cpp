@@ -4,7 +4,7 @@
 
 #define LOGO_PATH ":/icons/logo.png"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     WordMemorizer w;
     w.setMinimumSize(1000, 700);

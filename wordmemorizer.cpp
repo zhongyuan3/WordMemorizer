@@ -1,5 +1,4 @@
 #include "wordmemorizer.hpp"
-
 #include <QApplication>
 #include <QDir>
 #include <QFormLayout>
@@ -19,20 +18,11 @@
 #define STYLE_FILE_PATH ":/styles/main.qss"
 #define DATA_FILE_NAME "words.json"
 
-WordMemorizer::WordMemorizer(QWidget* parent)
-    : QMainWindow(parent),
-      m_currentIndex(-1),
-      m_correctCount(0),
-      m_totalQuestions(0),
-      m_isSearching(false),
-      m_currentMode(PracticeMode::WordToDefinition),
-      m_wordListSortOrder(SortOrder::CreationTimeAsc),
-      m_wordListDataCache(),
-      m_elapsedSeconds(0),
-      m_wordListContextMenu(nullptr),
-      m_editWordAction(nullptr),
-      m_deleteWordAction(nullptr),
-      m_editDialog(nullptr) {
+WordMemorizer::WordMemorizer(QWidget *parent)
+    : QMainWindow(parent), m_currentIndex(-1), m_correctCount(0), m_totalQuestions(0), m_isSearching(false),
+      m_currentMode(PracticeMode::WordToDefinition), m_wordListSortOrder(SortOrder::CreationTimeAsc),
+      m_wordListDataCache(), m_elapsedSeconds(0), m_wordListContextMenu(nullptr), m_editWordAction(nullptr),
+      m_deleteWordAction(nullptr), m_editDialog(nullptr) {
     QString writePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (writePath.isEmpty()) {
         QMessageBox::critical(this, "错误", "获取写入目录失败");
@@ -58,16 +48,16 @@ WordMemorizer::WordMemorizer(QWidget* parent)
     loadSearchCompleterModel();
 }
 
-void WordMemorizer::onCurrentItemChanged(QListWidgetItem* curr, QListWidgetItem* prev) {
+void WordMemorizer::onCurrentItemChanged(QListWidgetItem *curr, QListWidgetItem *prev) {
     if (prev) {
         qulonglong idx = prev->data(Qt::UserRole).toULongLong();
-        const WordEntry& entry = m_db.getWords()[idx];
+        const WordEntry &entry = m_db.getWords()[idx];
         prev->setText(entry.word);
     }
 
     if (curr) {
         qulonglong idx = curr->data(Qt::UserRole).toULongLong();
-        const WordEntry& entry = m_db.getWords()[idx];
+        const WordEntry &entry = m_db.getWords()[idx];
         curr->setText(entry.word + " - " + entry.definition);
     }
 }
@@ -104,10 +94,10 @@ void WordMemorizer::onSearchEditReturnPressed() {
 }
 
 void WordMemorizer::setupUi() {
-    QWidget* centralWidget = new QWidget(this);
+    QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
     // 单词录入
     m_wordEdit = new QLineEdit;
@@ -120,7 +110,7 @@ void WordMemorizer::setupUi() {
     m_prioritySpin->setValue(1);
     m_addDefinitionButton = new QPushButton("添加释义");
     m_addDefinitionButton->setObjectName("m_addDefinitionButton");
-    QHBoxLayout* addDefLayout = new QHBoxLayout;
+    QHBoxLayout *addDefLayout = new QHBoxLayout;
     addDefLayout->addWidget(m_definitionEdit);
     addDefLayout->addWidget(m_addDefinitionButton);
     m_definitionListWidget = new QListWidget;
@@ -131,10 +121,10 @@ void WordMemorizer::setupUi() {
     m_addButton->setObjectName("m_addButton");
     m_deleteButton = new QPushButton("删除选中单词");
     m_deleteButton->setObjectName("m_deleteButton");
-    QHBoxLayout* btnLayout = new QHBoxLayout;
+    QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(m_addButton);
     btnLayout->addWidget(m_deleteButton);
-    QFormLayout* wordInputLayout = new QFormLayout;
+    QFormLayout *wordInputLayout = new QFormLayout;
     wordInputLayout->addRow("单词", m_wordEdit);
     wordInputLayout->addRow("优先级", m_prioritySpin);
     wordInputLayout->addRow("输入释义", addDefLayout);
@@ -152,7 +142,7 @@ void WordMemorizer::setupUi() {
     m_searchEdit = new QLineEdit;
     m_searchEdit->setObjectName("m_searchEdit");
     m_searchEdit->setClearButtonEnabled(true);
-    QHBoxLayout* searchLayout = new QHBoxLayout;
+    QHBoxLayout *searchLayout = new QHBoxLayout;
     searchLayout->addWidget(m_searchEdit);
     searchLayout->addWidget(m_searchCancelButton);
     m_searchCompleter = new QCompleter(this);
@@ -164,7 +154,7 @@ void WordMemorizer::setupUi() {
     m_searchCompleter->setModel(m_searchModel);
     m_searchEdit->setCompleter(m_searchCompleter);
 
-    if (QListView* popup = qobject_cast<QListView*>(m_searchCompleter->popup())) {
+    if (QListView *popup = qobject_cast<QListView *>(m_searchCompleter->popup())) {
         popup->setStyleSheet(R"(
         QListView {
             border: 2px solid #dcdfe6;
@@ -205,7 +195,7 @@ void WordMemorizer::setupUi() {
     m_wordListSortOrderCombo->addItem("按修改时间降序");
     m_wordListSortOrderCombo->addItem("按优先级升序");
     m_wordListSortOrderCombo->addItem("按优先级降序");
-    QVBoxLayout* wordListLayout = new QVBoxLayout;
+    QVBoxLayout *wordListLayout = new QVBoxLayout;
     wordListLayout->addLayout(searchLayout);
     wordListLayout->addWidget(m_wordListSortOrderCombo);
     wordListLayout->addWidget(m_wordListWidget);
@@ -222,8 +212,8 @@ void WordMemorizer::setupUi() {
     m_editDialog->setWindowTitle("编辑单词");
     m_editDialog->setModal(true);
     m_editDialog->resize(400, 300);
-    QVBoxLayout* editLayout = new QVBoxLayout(m_editDialog);
-    QFormLayout* wordFormLayout = new QFormLayout();
+    QVBoxLayout *editLayout = new QVBoxLayout(m_editDialog);
+    QFormLayout *wordFormLayout = new QFormLayout();
     m_editWordInput = new QLineEdit();
     m_editWordInput->setObjectName("m_editWordInput");
     m_editPrioritySpin = new QSpinBox;
@@ -233,10 +223,10 @@ void WordMemorizer::setupUi() {
     wordFormLayout->addRow("单词:", m_editWordInput);
     wordFormLayout->addRow("优先级:", m_editPrioritySpin);
     editLayout->addLayout(wordFormLayout);
-    QGroupBox* defGroup = new QGroupBox("释义");
+    QGroupBox *defGroup = new QGroupBox("释义");
     defGroup->setObjectName("defGroup");
-    QVBoxLayout* defLayout = new QVBoxLayout(defGroup);
-    QHBoxLayout* defInputLayout = new QHBoxLayout();
+    QVBoxLayout *defLayout = new QVBoxLayout(defGroup);
+    QHBoxLayout *defInputLayout = new QHBoxLayout();
     m_editDefinitionInput = new QLineEdit();
     m_editDefinitionInput->setObjectName("m_editDefinitionInput");
     m_editAddDefButton = new QPushButton("添加释义");
@@ -252,7 +242,7 @@ void WordMemorizer::setupUi() {
     m_editRemoveDefButton->setObjectName("m_editRemoveDefButton");
     defLayout->addWidget(m_editRemoveDefButton);
     editLayout->addWidget(defGroup);
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
     m_editSaveButton = new QPushButton("保存");
     m_editSaveButton->setObjectName("m_editSaveButton");
     m_editCancelButton = new QPushButton("取消");
@@ -261,17 +251,17 @@ void WordMemorizer::setupUi() {
     buttonLayout->addWidget(m_editCancelButton);
     editLayout->addLayout(buttonLayout);
 
-    QGroupBox* wordsGroup = new QGroupBox;
+    QGroupBox *wordsGroup = new QGroupBox;
     wordsGroup->setObjectName("wordsGroup");
-    QHBoxLayout* wordGroupLayout = new QHBoxLayout;
+    QHBoxLayout *wordGroupLayout = new QHBoxLayout;
     wordGroupLayout->addLayout(wordInputLayout);
     wordGroupLayout->addLayout(wordListLayout);
     wordsGroup->setLayout(wordGroupLayout);
 
-    QGroupBox* practiceOptionsGroup = new QGroupBox;
+    QGroupBox *practiceOptionsGroup = new QGroupBox;
     practiceOptionsGroup->setObjectName("practiceOptionsGroup");
-    QVBoxLayout* practiceLayout = new QVBoxLayout;
-    QHBoxLayout* modeLayout = new QHBoxLayout;
+    QVBoxLayout *practiceLayout = new QVBoxLayout;
+    QHBoxLayout *modeLayout = new QHBoxLayout;
     m_practiceModeCombo = new QComboBox;
     m_practiceModeCombo->setObjectName("m_practiceModeCombo");
     m_practiceModeCombo->addItem("给出单词，填写释义");
@@ -288,9 +278,9 @@ void WordMemorizer::setupUi() {
     practiceLayout->addWidget(m_startPracticeButton);
     practiceOptionsGroup->setLayout(practiceLayout);
 
-    QGroupBox* practiceGroup = new QGroupBox;
+    QGroupBox *practiceGroup = new QGroupBox;
     practiceGroup->setObjectName("practiceGroup");
-    QVBoxLayout* practiceGroupLayout = new QVBoxLayout;
+    QVBoxLayout *practiceGroupLayout = new QVBoxLayout;
 
     m_practiceTimer = new QTimer(this);
     m_practiceTimer->setInterval(1000);
@@ -309,7 +299,7 @@ void WordMemorizer::setupUi() {
     m_submitButton = new QPushButton("提交答案");
     m_submitButton->setObjectName("m_submitButton");
     m_submitButton->setEnabled(false);
-    QHBoxLayout* answerLayout = new QHBoxLayout;
+    QHBoxLayout *answerLayout = new QHBoxLayout;
     answerLayout->addWidget(m_answerEdit);
     answerLayout->addWidget(m_submitButton);
     practiceGroupLayout->addLayout(answerLayout);
@@ -340,10 +330,8 @@ void WordMemorizer::setupUi() {
         m_searchEdit->clear();
         onSearchEditReturnPressed();
     });
-    connect(m_searchEdit, &QLineEdit::returnPressed, this,
-            &WordMemorizer::onSearchEditReturnPressed);
-    connect(m_wordListSortOrderCombo, &QComboBox::currentIndexChanged, this,
-            &WordMemorizer::onSortOrderChanged);
+    connect(m_searchEdit, &QLineEdit::returnPressed, this, &WordMemorizer::onSearchEditReturnPressed);
+    connect(m_wordListSortOrderCombo, &QComboBox::currentIndexChanged, this, &WordMemorizer::onSortOrderChanged);
     connect(m_addDefinitionButton, &QPushButton::clicked, this, [this]() {
         QString input = m_definitionEdit->text().trimmed();
         if (input.isEmpty()) {
@@ -355,7 +343,7 @@ void WordMemorizer::setupUi() {
         m_definitionEdit->setFocus();
     });
     connect(m_removeDefinitionButton, &QPushButton::clicked, this, [this]() {
-        QListWidgetItem* item = m_definitionListWidget->currentItem();
+        QListWidgetItem *item = m_definitionListWidget->currentItem();
         if (item) {
             delete m_definitionListWidget->takeItem(m_definitionListWidget->row(item));
         }
@@ -372,45 +360,46 @@ void WordMemorizer::setupUi() {
     });
     connect(m_wordListWidget, &QListWidget::customContextMenuRequested, this,
             &WordMemorizer::onWordListContextMenuRequested);
-    connect(m_wordListWidget, &QListWidget::currentItemChanged, this,
-            &WordMemorizer::onCurrentItemChanged);
+    connect(m_wordListWidget, &QListWidget::currentItemChanged, this, &WordMemorizer::onCurrentItemChanged);
     connect(m_editWordAction, &QAction::triggered, this, &WordMemorizer::onEditWord);
     connect(m_deleteWordAction, &QAction::triggered, this, &WordMemorizer::onDeleteWord);
     connect(m_editAddDefButton, &QPushButton::clicked, this, [this]() {
         QString input = m_editDefinitionInput->text().trimmed();
-        if (input.isEmpty()) return;
+        if (input.isEmpty()) {
+            return;
+        }
         const QStringList defs = input.split(" ");
         m_editDefinitionList->addItems(defs);
         m_editDefinitionInput->clear();
         m_editDefinitionInput->setFocus();
     });
     connect(m_editRemoveDefButton, &QPushButton::clicked, this, [this]() {
-        QListWidgetItem* item = m_editDefinitionList->currentItem();
+        QListWidgetItem *item = m_editDefinitionList->currentItem();
         if (item) {
             delete m_editDefinitionList->takeItem(m_editDefinitionList->row(item));
         }
     });
     connect(m_editSaveButton, &QPushButton::clicked, this, &WordMemorizer::onSaveWordEdit);
     connect(m_editCancelButton, &QPushButton::clicked, this, &WordMemorizer::onCancelWordEdit);
-    connect(m_editDefinitionInput, &QLineEdit::returnPressed, m_editAddDefButton,
-            &QPushButton::click);
+    connect(m_editDefinitionInput, &QLineEdit::returnPressed, m_editAddDefButton, &QPushButton::click);
     connect(qApp, &QApplication::aboutToQuit, this, [this]() {
         std::optional<WordDatabaseError> err = m_db.saveToFile();
-        if (err) QMessageBox::critical(this, "错误", err.value().message());
+        if (err) {
+            QMessageBox::critical(this, "错误", err.value().message());
+        }
     });
 }
 
 void WordMemorizer::updateTimerDisplay() {
     int minutes = m_elapsedSeconds / 60;
     int seconds = m_elapsedSeconds % 60;
-    QString timeText = QString("练习时间: %1:%2")
-                           .arg(minutes, 2, 10, QLatin1Char('0'))
-                           .arg(seconds, 2, 10, QLatin1Char('0'));
+    QString timeText =
+        QString("练习时间: %1:%2").arg(minutes, 2, 10, QLatin1Char('0')).arg(seconds, 2, 10, QLatin1Char('0'));
     m_practiceTimerLabel->setText(timeText);
 }
 
 void WordMemorizer::syncWordListDataCacheFromDb() {
-    const QVector<WordEntry>& words = m_db.getWords();
+    const QVector<WordEntry> &words = m_db.getWords();
     m_wordListDataCache.clear();
     for (qsizetype i = 0; i < words.size(); ++i) {
         m_wordListDataCache.append({i, &words[i]});
@@ -423,20 +412,23 @@ void WordMemorizer::syncAndUpdateWordList() {
 }
 
 void WordMemorizer::loadSearchCompleterModel() {
-    const QVector<WordEntry>& words = m_db.getWords();
+    const QVector<WordEntry> &words = m_db.getWords();
     QStringList wordList;
-    for (const WordEntry& entry : words) {
+    for (const WordEntry &entry : words) {
         wordList << entry.word;
     }
     m_searchModel->setStringList(wordList);
 }
 
-void WordMemorizer::updateSearchCompleterModel(const QString& oldWord, const QString& newWord) {
-    if (oldWord.isEmpty()) return;
-    if (oldWord == newWord) return;
+void WordMemorizer::updateSearchCompleterModel(const QString &oldWord, const QString &newWord) {
+    if (oldWord.isEmpty())
+        return;
+    if (oldWord == newWord)
+        return;
     QStringList wordList = m_searchModel->stringList();
     int row = wordList.indexOf(oldWord);
-    if (row == -1) return;
+    if (row == -1)
+        return;
     QModelIndex idx = m_searchModel->index(row);
     m_searchModel->setData(idx, newWord, Qt::EditRole);
 }
@@ -480,7 +472,7 @@ void WordMemorizer::onAddWord() {
 }
 
 void WordMemorizer::onDeleteWord() {
-    QListWidgetItem* current = m_wordListWidget->currentItem();
+    QListWidgetItem *current = m_wordListWidget->currentItem();
     if (!current) {
         QMessageBox::warning(this, "删除失败", "请先选择要删除的单词", QMessageBox::Ok);
         return;
@@ -522,11 +514,10 @@ void WordMemorizer::onStartPractice() {
     }
 
     if (requestedCount > totalCount) {
-        QMessageBox::warning(this, "练习失败",
-                             QString("练习失败，请求的题目数量 (%1) 超过了单词总数 (%2)")
-                                 .arg(requestedCount)
-                                 .arg(totalCount),
-                             QMessageBox::Ok);
+        QMessageBox::warning(
+            this, "练习失败",
+            QString("练习失败，请求的题目数量 (%1) 超过了单词总数 (%2)").arg(requestedCount).arg(totalCount),
+            QMessageBox::Ok);
         return;
     }
 
@@ -536,7 +527,7 @@ void WordMemorizer::onStartPractice() {
     m_currentIndex = 0;
     m_elapsedSeconds = 0;
 
-    const QVector<WordEntry>& words = m_db.getWords();
+    const QVector<WordEntry> &words = m_db.getWords();
     m_practiceWordIndices.clear();
     for (qsizetype i = 0; i < words.size(); ++i) {
         m_practiceWordIndices.append(i);
@@ -545,12 +536,12 @@ void WordMemorizer::onStartPractice() {
     std::default_random_engine gen(rd());
     std::shuffle(m_practiceWordIndices.begin(), m_practiceWordIndices.end(), gen);
 
-    findChild<QGroupBox*>("practiceGroup")->show();
+    findChild<QGroupBox *>("practiceGroup")->show();
 
     m_practiceAccuracyLabel->setText("答对题数\n正确率");
 
-    findChild<QGroupBox*>("wordsGroup")->hide();
-    findChild<QGroupBox*>("practiceOptionsGroup")->hide();
+    findChild<QGroupBox *>("wordsGroup")->hide();
+    findChild<QGroupBox *>("practiceOptionsGroup")->hide();
 
     m_practiceTimer->start();
     updateTimerDisplay();
@@ -564,8 +555,8 @@ void WordMemorizer::onStartPractice() {
 void WordMemorizer::startModeWordToDef() {
     if (m_currentIndex < m_practiceWordIndices.size()) {
         qsizetype index = m_practiceWordIndices[m_currentIndex];
-        const QVector<WordEntry>& words = m_db.getWords();
-        const WordEntry& entry = words[index];
+        const QVector<WordEntry> &words = m_db.getWords();
+        const WordEntry &entry = words[index];
         m_questionLabel->setText(QString("第 %1 题：%2 ").arg(m_currentIndex + 1).arg(entry.word));
         m_answerEdit->clear();
         m_answerEdit->setFocus();
@@ -576,7 +567,7 @@ void WordMemorizer::startModeWordToDef() {
     }
 }
 
-static QString randomDefinition(const WordEntry& entry) {
+static QString randomDefinition(const WordEntry &entry) {
     QStringList parts = entry.definition.split(",");
     std::random_device rd;
     std::default_random_engine gen(rd());
@@ -587,10 +578,9 @@ static QString randomDefinition(const WordEntry& entry) {
 void WordMemorizer::startModeDefToWord() {
     if (m_currentIndex < m_practiceWordIndices.size()) {
         qsizetype index = m_practiceWordIndices[m_currentIndex];
-        const QVector<WordEntry>& words = m_db.getWords();
-        const WordEntry& entry = words[index];
-        m_questionLabel->setText(
-            QString("第 %1 题：%2 ").arg(m_currentIndex + 1).arg(randomDefinition(entry)));
+        const QVector<WordEntry> &words = m_db.getWords();
+        const WordEntry &entry = words[index];
+        m_questionLabel->setText(QString("第 %1 题：%2 ").arg(m_currentIndex + 1).arg(randomDefinition(entry)));
         m_answerEdit->clear();
         m_answerEdit->setFocus();
         m_answerEdit->setReadOnly(false);
@@ -603,8 +593,8 @@ void WordMemorizer::startModeDefToWord() {
 void WordMemorizer::onPracticeSubmit() {
     QString userAnswer = m_answerEdit->text().trimmed();
     qsizetype index = m_practiceWordIndices[m_currentIndex];
-    const QVector<WordEntry>& words = m_db.getWords();
-    const WordEntry& correct = words[index];
+    const QVector<WordEntry> &words = m_db.getWords();
+    const WordEntry &correct = words[index];
 
     bool isCorrect = false;
     if (userAnswer.isEmpty()) {
@@ -625,7 +615,7 @@ void WordMemorizer::onPracticeSubmit() {
     m_submitButton->setEnabled(false);
     m_answerEdit->setReadOnly(true);
 
-    QListWidgetItem* item = new QListWidgetItem(correct.word + " - " + correct.definition);
+    QListWidgetItem *item = new QListWidgetItem(correct.word + " - " + correct.definition);
     item->setData(Qt::UserRole, !isCorrect);
     m_practiceWordsListWidget->addItem(item);
 
@@ -648,10 +638,8 @@ void WordMemorizer::endPractice() {
     m_practiceTimer->stop();
 
     double accuracy = (double)m_correctCount / m_totalQuestions * 100.0;
-    QString result = QString("答对题数: %1 / %2\n正确率: %3%")
-                         .arg(m_correctCount)
-                         .arg(m_totalQuestions)
-                         .arg(accuracy, 0, 'f', 1);
+    QString result =
+        QString("答对题数: %1 / %2\n正确率: %3%").arg(m_correctCount).arg(m_totalQuestions).arg(accuracy, 0, 'f', 1);
 
     m_questionLabel->setText("练习结束");
     m_practiceAccuracyLabel->setText(result);
@@ -663,69 +651,69 @@ void WordMemorizer::endPractice() {
 void WordMemorizer::onExitPractice() {
     m_practiceTimer->stop();
     m_practiceWordsListWidget->clear();
-    findChild<QGroupBox*>("practiceGroup")->hide();
-    findChild<QGroupBox*>("wordsGroup")->show();
-    findChild<QGroupBox*>("practiceOptionsGroup")->show();
+    findChild<QGroupBox *>("practiceGroup")->hide();
+    findChild<QGroupBox *>("wordsGroup")->show();
+    findChild<QGroupBox *>("practiceOptionsGroup")->show();
 }
 
 void WordMemorizer::updateWordList() {
     switch (m_wordListSortOrder) {
-        default:
-        case SortOrder::CreationTimeAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->createdAt < std::get<1>(b)->createdAt;
-                      });
-            break;
-        case SortOrder::CreationTimeDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->createdAt > std::get<1>(b)->createdAt;
-                      });
-            break;
-        case SortOrder::ModifiedAtAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->modifiedAt < std::get<1>(b)->modifiedAt;
-                      });
-            break;
-        case SortOrder::ModifiedAtDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->modifiedAt > std::get<1>(b)->modifiedAt;
-                      });
-            break;
-        case SortOrder::PriorityAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->priority < std::get<1>(b)->priority;
-                      });
-            break;
-        case SortOrder::PriorityDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry*>& a,
-                         const std::tuple<qsizetype, const WordEntry*>& b) {
-                          return std::get<1>(a)->priority > std::get<1>(b)->priority;
-                      });
-            break;
+    default:
+    case SortOrder::CreationTimeAsc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->createdAt < std::get<1>(b)->createdAt;
+            });
+        break;
+    case SortOrder::CreationTimeDesc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->createdAt > std::get<1>(b)->createdAt;
+            });
+        break;
+    case SortOrder::ModifiedAtAsc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->modifiedAt < std::get<1>(b)->modifiedAt;
+            });
+        break;
+    case SortOrder::ModifiedAtDesc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->modifiedAt > std::get<1>(b)->modifiedAt;
+            });
+        break;
+    case SortOrder::PriorityAsc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->priority < std::get<1>(b)->priority;
+            });
+        break;
+    case SortOrder::PriorityDesc:
+        std::sort(
+            m_wordListDataCache.begin(), m_wordListDataCache.end(),
+            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
+                return std::get<1>(a)->priority > std::get<1>(b)->priority;
+            });
+        break;
     }
 
     m_wordListWidget->clear();
-    for (const auto& [index, entry] : m_wordListDataCache) {
-        QListWidgetItem* item = new QListWidgetItem(entry->word);
+    for (const auto &[index, entry] : m_wordListDataCache) {
+        QListWidgetItem *item = new QListWidgetItem(entry->word);
         QVariant value = static_cast<qulonglong>(index);
         item->setData(Qt::UserRole, value);
         m_wordListWidget->addItem(item);
     }
 }
 
-void WordMemorizer::onWordListContextMenuRequested(const QPoint& pos) {
-    QListWidgetItem* item = m_wordListWidget->itemAt(pos);
+void WordMemorizer::onWordListContextMenuRequested(const QPoint &pos) {
+    QListWidgetItem *item = m_wordListWidget->itemAt(pos);
     if (item) {
         m_wordListWidget->setCurrentItem(item);
         m_wordListContextMenu->exec(m_wordListWidget->mapToGlobal(pos));
@@ -733,11 +721,12 @@ void WordMemorizer::onWordListContextMenuRequested(const QPoint& pos) {
 }
 
 void WordMemorizer::onEditWord() {
-    QListWidgetItem* currItem = m_wordListWidget->currentItem();
-    if (!currItem) return;
+    QListWidgetItem *currItem = m_wordListWidget->currentItem();
+    if (!currItem)
+        return;
 
     qsizetype idx = currItem->data(Qt::UserRole).toULongLong();
-    const WordEntry& entry = m_db.getWords()[idx];
+    const WordEntry &entry = m_db.getWords()[idx];
 
     m_editingOriginalWord = entry.word;
     m_editPrioritySpin->setValue(entry.priority);
@@ -746,7 +735,8 @@ void WordMemorizer::onEditWord() {
     m_editDefinitionList->clear();
 
     QStringList defs = entry.definition.split(",", Qt::SkipEmptyParts);
-    for (const QString& def : defs) m_editDefinitionList->addItem(def.trimmed());
+    for (const QString &def : defs)
+        m_editDefinitionList->addItem(def.trimmed());
 
     m_editDefinitionInput->clear();
     m_editDialog->show();
@@ -774,8 +764,7 @@ void WordMemorizer::onSaveWordEdit() {
 
     int newPriority = m_editPrioritySpin->value();
 
-    std::optional<WordDatabaseError> err =
-        m_db.updateWord(m_editingOriginalWord, newWord, newDefinition, newPriority);
+    std::optional<WordDatabaseError> err = m_db.updateWord(m_editingOriginalWord, newWord, newDefinition, newPriority);
     if (err) {
         QMessageBox::warning(this, "修改失败", err.value().message());
         return;
@@ -791,7 +780,9 @@ void WordMemorizer::onSaveWordEdit() {
     m_editDialog->hide();
 }
 
-void WordMemorizer::onCancelWordEdit() { m_editDialog->hide(); }
+void WordMemorizer::onCancelWordEdit() {
+    m_editDialog->hide();
+}
 
 void WordMemorizer::setupStyle() {
     QFile styleFile(STYLE_FILE_PATH);
