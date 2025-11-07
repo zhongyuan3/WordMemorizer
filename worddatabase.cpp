@@ -118,6 +118,11 @@ std::optional<WordDatabaseError> WordDatabase::loadFromFile() {
             } else if (containsWord && containsDefinition) {
                 m_words.append({obj["word"].toString(), obj["definition"].toString(), now, now, 1});
             }
+
+            auto word = m_words.back();
+            if (word.priority <= 0) {
+                word.priority = 1;
+            }
         }
     }
     return std::nullopt;

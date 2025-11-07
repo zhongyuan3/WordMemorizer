@@ -502,6 +502,33 @@ void WordMemorizer::onDeleteWord() {
     }
 }
 
+struct WordPriorityWithK {
+    qsizetype index;
+    int priority;
+    double k;
+};
+
+// Efraimidis-Spirakis
+static QVector<qsizetype> getRandomWords(QVector<WordPriorityWithK> &wordPriorities, int count) {
+    auto randDev = std::random_device();
+    auto randGen = std::mt19937(randDev());
+
+    for (auto &wp : wordPriorities) {
+        double u = randGen();
+        wp.k = std::pow(u, 1.0 / wp.priority);
+    }
+
+    std::sort(wordPriorities.begin(), wordPriorities.end(), [](const WordPriorityWithK &a, const WordPriorityWithK &b) {
+        return a.k > b.k;
+    });
+
+    QVector<qsizetype> randomWords;
+    for (int i = 0; i < count; ++i) {
+        randomWords.append(wordPriorities[i].index);
+    }
+    return randomWords;
+}
+
 void WordMemorizer::onStartPractice() {
     m_questionLabel->setText("准备开始练习...");
 
@@ -528,13 +555,15 @@ void WordMemorizer::onStartPractice() {
     m_elapsedSeconds = 0;
 
     const QVector<WordEntry> &words = m_db.getWords();
-    m_practiceWordIndices.clear();
+    QVector<WordPriorityWithK> wordPriorities;
     for (qsizetype i = 0; i < words.size(); ++i) {
-        m_practiceWordIndices.append(i);
+        wordPriorities.append({i, words[i].priority, 0});
     }
-    std::random_device rd;
-    std::default_random_engine gen(rd());
-    std::shuffle(m_practiceWordIndices.begin(), m_practiceWordIndices.end(), gen);
+    QVector<qsizetype> randomWords = getRandomWords(wordPriorities, requestedCount);
+    m_practiceWordIndices.clear();
+    for (qsizetype i = 0; i < randomWords.size(); ++i) {
+        m_practiceWordIndices.append(randomWords[i]);
+    }
 
     findChild<QGroupBox *>("practiceGroup")->show();
 
