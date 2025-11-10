@@ -1,4 +1,5 @@
 #include "wordmemorizer.hpp"
+
 #include <QApplication>
 #include <QDir>
 #include <QFormLayout>
@@ -13,16 +14,26 @@
 #include <QTextStream>
 #include <QTimer>
 #include <QVBoxLayout>
-#include <algorithm>
+
+#include "algorithm.hpp"
 
 #define STYLE_FILE_PATH ":/styles/main.qss"
 #define DATA_FILE_NAME "words.json"
 
 WordMemorizer::WordMemorizer(QWidget *parent)
-    : QMainWindow(parent), m_currentIndex(-1), m_correctCount(0), m_totalQuestions(0), m_isSearching(false),
-      m_currentMode(PracticeMode::WordToDefinition), m_wordListSortOrder(SortOrder::CreationTimeAsc),
-      m_wordListDataCache(), m_elapsedSeconds(0), m_wordListContextMenu(nullptr), m_editWordAction(nullptr),
-      m_deleteWordAction(nullptr), m_editDialog(nullptr) {
+    : QMainWindow(parent),
+      m_currentIndex(-1),
+      m_correctCount(0),
+      m_totalQuestions(0),
+      m_isSearching(false),
+      m_currentMode(PracticeMode::WordToDefinition),
+      m_wordListSortOrder(SortOrder::CreationTimeAsc),
+      m_wordListDataCache(),
+      m_elapsedSeconds(0),
+      m_wordListContextMenu(nullptr),
+      m_editWordAction(nullptr),
+      m_deleteWordAction(nullptr),
+      m_editDialog(nullptr) {
     QString writePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (writePath.isEmpty()) {
         QMessageBox::critical(this, "错误", "获取写入目录失败");
@@ -502,33 +513,6 @@ void WordMemorizer::onDeleteWord() {
     }
 }
 
-struct WordPriorityWithK {
-    qsizetype index;
-    int priority;
-    double k;
-};
-
-// Efraimidis-Spirakis
-static QVector<qsizetype> getRandomWords(QVector<WordPriorityWithK> &wordPriorities, int count) {
-    auto randDev = std::random_device();
-    auto randGen = std::mt19937(randDev());
-
-    for (auto &wp : wordPriorities) {
-        double u = randGen();
-        wp.k = std::pow(u, 1.0 / wp.priority);
-    }
-
-    std::sort(wordPriorities.begin(), wordPriorities.end(), [](const WordPriorityWithK &a, const WordPriorityWithK &b) {
-        return a.k > b.k;
-    });
-
-    QVector<qsizetype> randomWords;
-    for (int i = 0; i < count; ++i) {
-        randomWords.append(wordPriorities[i].index);
-    }
-    return randomWords;
-}
-
 void WordMemorizer::onStartPractice() {
     m_questionLabel->setText("准备开始练习...");
 
@@ -554,16 +538,7 @@ void WordMemorizer::onStartPractice() {
     m_currentIndex = 0;
     m_elapsedSeconds = 0;
 
-    const QVector<WordEntry> &words = m_db.getWords();
-    QVector<WordPriorityWithK> wordPriorities;
-    for (qsizetype i = 0; i < words.size(); ++i) {
-        wordPriorities.append({i, words[i].priority, 0});
-    }
-    QVector<qsizetype> randomWords = getRandomWords(wordPriorities, requestedCount);
-    m_practiceWordIndices.clear();
-    for (qsizetype i = 0; i < randomWords.size(); ++i) {
-        m_practiceWordIndices.append(randomWords[i]);
-    }
+    m_practiceWordIndices = std::move(radomlySelectWords(m_db.getWords(), requestedCount));
 
     findChild<QGroupBox *>("practiceGroup")->show();
 
@@ -596,20 +571,12 @@ void WordMemorizer::startModeWordToDef() {
     }
 }
 
-static QString randomDefinition(const WordEntry &entry) {
-    QStringList parts = entry.definition.split(",");
-    std::random_device rd;
-    std::default_random_engine gen(rd());
-    std::shuffle(parts.begin(), parts.end(), gen);
-    return parts.front();
-}
-
 void WordMemorizer::startModeDefToWord() {
     if (m_currentIndex < m_practiceWordIndices.size()) {
         qsizetype index = m_practiceWordIndices[m_currentIndex];
         const QVector<WordEntry> &words = m_db.getWords();
         const WordEntry &entry = words[index];
-        m_questionLabel->setText(QString("第 %1 题：%2 ").arg(m_currentIndex + 1).arg(randomDefinition(entry)));
+        m_questionLabel->setText(QString("第 %1 题：%2 ").arg(m_currentIndex + 1).arg(randomlySelectDefinition(entry)));
         m_answerEdit->clear();
         m_answerEdit->setFocus();
         m_answerEdit->setReadOnly(false);
@@ -622,8 +589,9 @@ void WordMemorizer::startModeDefToWord() {
 void WordMemorizer::onPracticeSubmit() {
     QString userAnswer = m_answerEdit->text().trimmed();
     qsizetype index = m_practiceWordIndices[m_currentIndex];
-    const QVector<WordEntry> &words = m_db.getWords();
-    const WordEntry &correct = words[index];
+    QVector<WordEntry> &words = m_db.getMutWords();
+    WordEntry &correct = words[index];
+    correct.totalAttempts++;
 
     bool isCorrect = false;
     if (userAnswer.isEmpty()) {
@@ -632,6 +600,10 @@ void WordMemorizer::onPracticeSubmit() {
         isCorrect = correct.definition.contains(userAnswer, Qt::CaseInsensitive);
     } else {
         isCorrect = correct.word.contains(userAnswer, Qt::CaseInsensitive);
+    }
+
+    if (!isCorrect) {
+        correct.totalErrors++;
     }
 
     if (isCorrect) {
@@ -687,49 +659,49 @@ void WordMemorizer::onExitPractice() {
 
 void WordMemorizer::updateWordList() {
     switch (m_wordListSortOrder) {
-    default:
-    case SortOrder::CreationTimeAsc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->createdAt < std::get<1>(b)->createdAt;
-            });
-        break;
-    case SortOrder::CreationTimeDesc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->createdAt > std::get<1>(b)->createdAt;
-            });
-        break;
-    case SortOrder::ModifiedAtAsc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->modifiedAt < std::get<1>(b)->modifiedAt;
-            });
-        break;
-    case SortOrder::ModifiedAtDesc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->modifiedAt > std::get<1>(b)->modifiedAt;
-            });
-        break;
-    case SortOrder::PriorityAsc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->priority < std::get<1>(b)->priority;
-            });
-        break;
-    case SortOrder::PriorityDesc:
-        std::sort(
-            m_wordListDataCache.begin(), m_wordListDataCache.end(),
-            [](const std::tuple<qsizetype, const WordEntry *> &a, const std::tuple<qsizetype, const WordEntry *> &b) {
-                return std::get<1>(a)->priority > std::get<1>(b)->priority;
-            });
-        break;
+        default:
+        case SortOrder::CreationTimeAsc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->createdAt < std::get<1>(b)->createdAt;
+                      });
+            break;
+        case SortOrder::CreationTimeDesc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->createdAt > std::get<1>(b)->createdAt;
+                      });
+            break;
+        case SortOrder::ModifiedAtAsc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->modifiedAt < std::get<1>(b)->modifiedAt;
+                      });
+            break;
+        case SortOrder::ModifiedAtDesc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->modifiedAt > std::get<1>(b)->modifiedAt;
+                      });
+            break;
+        case SortOrder::PriorityAsc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->priority < std::get<1>(b)->priority;
+                      });
+            break;
+        case SortOrder::PriorityDesc:
+            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                      [](const std::tuple<qsizetype, const WordEntry *> &a,
+                         const std::tuple<qsizetype, const WordEntry *> &b) {
+                          return std::get<1>(a)->priority > std::get<1>(b)->priority;
+                      });
+            break;
     }
 
     m_wordListWidget->clear();

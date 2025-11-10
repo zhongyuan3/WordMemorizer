@@ -1,7 +1,6 @@
-#ifndef WORDMEMORIZER_H
-#define WORDMEMORIZER_H
+#ifndef WORDMEMORIZER_HPP
+#define WORDMEMORIZER_HPP
 
-#include "worddatabase.hpp"
 #include <QComboBox>
 #include <QCompleter>
 #include <QElapsedTimer>
@@ -23,6 +22,8 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QVariant>
+
+#include "worddatabase.hpp"
 
 class PracticeResultDelegate : public QStyledItemDelegate {
 public:
@@ -159,4 +160,4 @@ private:
     PracticeMode m_currentMode;
 };
 
-#endif // WORDMEMORIZER_H
+#endif  // WORDMEMORIZER_H

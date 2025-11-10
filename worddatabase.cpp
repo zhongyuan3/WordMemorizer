@@ -1,4 +1,5 @@
 #include "worddatabase.hpp"
+
 #include <QDebug>
 #include <QFile>
 #include <QJsonArray>
@@ -66,6 +67,8 @@ std::optional<WordDatabaseError> WordDatabase::saveToFile() const {
         obj["priority"] = entry.priority;
         obj["createdAt"] = entry.createdAt.toString(Qt::ISODate);
         obj["modifiedAt"] = entry.modifiedAt.toString(Qt::ISODate);
+        obj["totalAttempts"] = entry.totalAttempts;
+        obj["totalErrors"] = entry.totalErrors;
         wordsArray.append(obj);
     }
 
@@ -97,34 +100,50 @@ std::optional<WordDatabaseError> WordDatabase::loadFromFile() {
 
     const QJsonArray wordsArray = doc.array();
     m_words.clear();
-    QDateTime now = QDateTime::currentDateTime();
+    const QDateTime now = QDateTime::currentDateTime();
+
     for (const auto &value : wordsArray) {
-        if (value.isObject()) {
-            QJsonObject obj = value.toObject();
-            bool containsWord = obj.contains("word");
-            bool containsDefinition = obj.contains("definition");
-            bool containsPriority = obj.contains("priority");
-            bool containsCreatedAt = obj.contains("createdAt");
-            bool containsModifiedAt = obj.contains("modifiedAt");
+        if (!value.isObject())
+            continue;
 
-            if (containsWord && containsDefinition && containsPriority && containsCreatedAt && containsModifiedAt) {
-                m_words.append({obj["word"].toString(), obj["definition"].toString(),
-                                QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate),
-                                QDateTime::fromString(obj["modifiedAt"].toString(), Qt::ISODate),
-                                obj["priority"].toInt()});
-            } else if (containsWord && containsDefinition && containsPriority) {
-                m_words.append(
-                    {obj["word"].toString(), obj["definition"].toString(), now, now, obj["priority"].toInt()});
-            } else if (containsWord && containsDefinition) {
-                m_words.append({obj["word"].toString(), obj["definition"].toString(), now, now, 1});
-            }
+        const QJsonObject obj = value.toObject();
 
-            auto word = m_words.back();
-            if (word.priority <= 0) {
-                word.priority = 1;
-            }
+        QString word = obj.value("word").toString();
+        QString definition = obj.value("definition").toString();
+
+        if (word.isEmpty() && definition.isEmpty())
+            continue;
+
+        QDateTime createdAt;
+        if (obj.contains("createdAt") && !obj["createdAt"].toString().isEmpty()) {
+            createdAt = QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate);
         }
+        if (!createdAt.isValid()) {
+            createdAt = now;
+        }
+
+        QDateTime modifiedAt;
+        if (obj.contains("modifiedAt") && !obj["modifiedAt"].toString().isEmpty()) {
+            modifiedAt = QDateTime::fromString(obj["modifiedAt"].toString(), Qt::ISODate);
+        }
+        if (!modifiedAt.isValid()) {
+            modifiedAt = now;
+        }
+
+        int priority = obj.value("priority").toInt(1);
+        if (priority <= 0)
+            priority = 1;
+
+        int totalAttempts = obj.value("totalAttempts").toInt(0);
+        int totalErrors = obj.value("totalErrors").toInt(0);
+
+        if (totalErrors > totalAttempts) {
+            totalErrors = totalAttempts;
+        }
+
+        m_words.append({word, definition, createdAt, modifiedAt, priority, totalAttempts, totalErrors});
     }
+
     return std::nullopt;
 }
 

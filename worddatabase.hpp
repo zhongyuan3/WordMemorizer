@@ -1,18 +1,19 @@
-#ifndef WORDDATABASE_H
-#define WORDDATABASE_H
+#ifndef WORDDATABASE_HPP
+#define WORDDATABASE_HPP
 
 #include <QDateTime>
 #include <QString>
 #include <QVector>
 #include <optional>
-#include <unordered_set>
 
 struct WordEntry {
     QString word;
     QString definition;
     QDateTime createdAt;
     QDateTime modifiedAt;
-    int priority;
+    int priority = 1;
+    int totalAttempts = 0;
+    int totalErrors = 0;
 };
 
 class WordDatabaseError {
@@ -40,6 +41,9 @@ public:
     const QVector<WordEntry> &getWords() const {
         return m_words;
     }
+    QVector<WordEntry> &getMutWords() {
+        return m_words;
+    }
     int wordCount() const {
         return m_words.size();
     }
@@ -57,4 +61,4 @@ private:
     QString m_filename;
 };
 
-#endif // WORDDATABASE_H
+#endif  // WORDDATABASE_H
