@@ -16,6 +16,8 @@ set(PROJECT_SOURCES
         main.cpp
         wordmemorizer.cpp
         wordmemorizer.hpp
+        algorithm.hpp
+        algorithm.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
