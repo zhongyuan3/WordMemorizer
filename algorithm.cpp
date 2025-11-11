@@ -98,5 +98,5 @@ QString randomlySelectDefinition(const WordEntry &wordEntry) {
     std::random_device rd;
     std::default_random_engine gen(rd());
     std::shuffle(parts.begin(), parts.end(), gen);
-    return parts.front();
+    return parts.first().trimmed();
 }
