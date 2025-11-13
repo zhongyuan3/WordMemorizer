@@ -29,10 +29,10 @@
 class PracticeResultDelegate : public QStyledItemDelegate {
     Q_OBJECT
 public:
-    explicit PracticeResultDelegate(QObject *parent = nullptr);
+    explicit PracticeResultDelegate(QObject* parent = nullptr);
 
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
 /**
@@ -42,7 +42,7 @@ class WordMemorizer : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit WordMemorizer(QWidget *parent = nullptr);
+    explicit WordMemorizer(QWidget* parent = nullptr);
     ~WordMemorizer() override;
 
     /**
@@ -62,7 +62,9 @@ public:
         ModifiedAtAsc,        ///< 按修改时间升序
         ModifiedAtDesc,       ///< 按修改时间降序
         PriorityAsc,          ///< 按优先级升序
-        PriorityDesc          ///< 按优先级降序
+        PriorityDesc,         ///< 按优先级降序
+        AlphabeticalAsc,      ///< 按字母升序
+        AlphabeticalDesc,     ///< 按字母降序
     };
 
 private slots:
@@ -79,8 +81,8 @@ private slots:
     void onExitPractice();
 
     // 列表和搜索相关槽函数
-    void onWordListContextMenuRequested(const QPoint &pos);
-    void onCurrentItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
+    void onWordListContextMenuRequested(const QPoint& pos);
+    void onCurrentItemChanged(QListWidgetItem* current, QListWidgetItem* previous);
     void onSortOrderChanged();
     void onSearchEditReturnPressed();
 
@@ -95,13 +97,13 @@ private:
     void setupConnections();
 
     // UI组件创建函数
-    QGroupBox *createWordsGroup();
-    QFormLayout *createWordInputLayout();
-    QVBoxLayout *createWordListLayout();
+    QGroupBox* createWordsGroup();
+    QFormLayout* createWordInputLayout();
+    QVBoxLayout* createWordListLayout();
     void setupSearchCompleter();
     void setupContextMenu();
-    QGroupBox *createPracticeOptionsGroup();
-    QGroupBox *createPracticeGroup();
+    QGroupBox* createPracticeOptionsGroup();
+    QGroupBox* createPracticeGroup();
     void createEditDialog();
 
     // 数据管理函数
@@ -111,7 +113,7 @@ private:
 
     // 搜索相关函数
     void loadSearchCompleterModel();
-    void updateSearchCompleterModel(const QString &oldWord, const QString &newWord);
+    void updateSearchCompleterModel(const QString& oldWord, const QString& newWord);
 
     // 练习模式相关函数
     void startModeWordToDefinition();
@@ -120,72 +122,72 @@ private:
     void updateTimerDisplay();
 
     // 验证函数
-    bool validateWordInput(const QString &word, const QStringList &definitions);
+    bool validateWordInput(const QString& word, const QStringList& definitions);
 
     // 数据持久化函数
     void saveDatabase();
 
     // 获取UI组件的辅助函数
-    QGroupBox *getPracticeGroupBox() const;
-    QGroupBox *getWordsGroupBox() const;
-    QGroupBox *getPracticeOptionsGroupBox() const;
+    QGroupBox* getPracticeGroupBox() const;
+    QGroupBox* getWordsGroupBox() const;
+    QGroupBox* getPracticeOptionsGroupBox() const;
 
     // 数据库对象
     WordDatabase m_db;
 
     // 单词录入相关UI组件
-    QLineEdit *m_wordEdit;
-    QLineEdit *m_definitionEdit;
-    QSpinBox *m_prioritySpin;
-    QListWidget *m_definitionListWidget;
-    QPushButton *m_addDefinitionButton;
-    QPushButton *m_removeDefinitionButton;
-    QPushButton *m_addButton;
-    QPushButton *m_deleteButton;
+    QLineEdit* m_wordEdit;
+    QLineEdit* m_definitionEdit;
+    QSpinBox* m_prioritySpin;
+    QListWidget* m_definitionListWidget;
+    QPushButton* m_addDefinitionButton;
+    QPushButton* m_removeDefinitionButton;
+    QPushButton* m_addButton;
+    QPushButton* m_deleteButton;
 
     // 单词列表相关UI组件
     bool m_isSearching;
-    QPushButton *m_searchCancelButton;
-    QLineEdit *m_searchEdit;
-    QCompleter *m_searchCompleter;
-    QStringListModel *m_searchModel;
-    QVector<std::tuple<qsizetype, const WordEntry *>> m_wordListDataCache;
-    QComboBox *m_wordListSortOrderCombo;
+    QPushButton* m_searchCancelButton;
+    QLineEdit* m_searchEdit;
+    QCompleter* m_searchCompleter;
+    QStringListModel* m_searchModel;
+    QVector<std::tuple<qsizetype, const WordEntry*>> m_wordListDataCache;
+    QComboBox* m_wordListSortOrderCombo;
     SortOrder m_wordListSortOrder;
-    QListWidget *m_wordListWidget;
+    QListWidget* m_wordListWidget;
 
     // 上下文菜单相关
-    QMenu *m_wordListContextMenu;
-    QAction *m_editWordAction;
-    QAction *m_deleteWordAction;
+    QMenu* m_wordListContextMenu;
+    QAction* m_editWordAction;
+    QAction* m_deleteWordAction;
 
     // 编辑对话框相关
-    QDialog *m_editDialog;
-    QLineEdit *m_editWordInput;
-    QSpinBox *m_editPrioritySpin;
-    QListWidget *m_editDefinitionList;
-    QLineEdit *m_editDefinitionInput;
-    QPushButton *m_editAddDefButton;
-    QPushButton *m_editRemoveDefButton;
-    QPushButton *m_editSaveButton;
-    QPushButton *m_editCancelButton;
+    QDialog* m_editDialog;
+    QLineEdit* m_editWordInput;
+    QSpinBox* m_editPrioritySpin;
+    QListWidget* m_editDefinitionList;
+    QLineEdit* m_editDefinitionInput;
+    QPushButton* m_editAddDefButton;
+    QPushButton* m_editRemoveDefButton;
+    QPushButton* m_editSaveButton;
+    QPushButton* m_editCancelButton;
     QString m_editingOriginalWord;
 
     // 练习设置相关
-    QPushButton *m_startPracticeButton;
-    QComboBox *m_practiceModeCombo;
-    QSpinBox *m_wordCountSpin;
+    QPushButton* m_startPracticeButton;
+    QComboBox* m_practiceModeCombo;
+    QSpinBox* m_wordCountSpin;
 
     // 练习界面相关
-    QLabel *m_questionLabel;
-    QLineEdit *m_answerEdit;
-    QPushButton *m_submitButton;
+    QLabel* m_questionLabel;
+    QLineEdit* m_answerEdit;
+    QPushButton* m_submitButton;
     QVector<qsizetype> m_practiceWordIndices;
-    QLabel *m_practiceTimerLabel;
-    QTimer *m_practiceTimer;
-    QPushButton *m_exitPracticeButton;
-    QLabel *m_practiceAccuracyLabel;
-    QListWidget *m_practiceWordsListWidget;
+    QLabel* m_practiceTimerLabel;
+    QTimer* m_practiceTimer;
+    QPushButton* m_exitPracticeButton;
+    QLabel* m_practiceAccuracyLabel;
+    QListWidget* m_practiceWordsListWidget;
 
     // 练习状态变量
     qint64 m_elapsedSeconds;
