@@ -14,9 +14,11 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
         main.cpp
+        wordmemorizer.h
         wordmemorizer.cpp
-        wordmemorizer.hpp
-        algorithm.hpp
+        worddatabase.h
+        worddatabase.cpp
+        algorithm.h
         algorithm.cpp
 )
 
@@ -24,7 +26,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(WordMemorizer
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        worddatabase.hpp worddatabase.cpp
     )
 
     qt6_add_resources(WordMemorizer "resources"
