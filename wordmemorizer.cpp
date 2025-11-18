@@ -1131,7 +1131,6 @@ void PracticeRecordDisplayer::setupUi() {
   m_practiceModeLabel = new QLabel("");
   m_wrongWordsList = new QListWidget();
   QLabel* wrongWordsListLabel = new QLabel("错误单词:");
-  m_wrongWordsList->setItemDelegate(new PracticeResultDelegate(this));
 
   mainLayout->addWidget(m_practiceTimeLabel);
   mainLayout->addWidget(m_practiceDurationLabel);
@@ -1160,7 +1159,7 @@ void PracticeRecordDisplayer::displayRecord(const PracticeRecord& record) {
 
   m_wrongWordsList->clear();
   for (const PracticeEntry& entry : record.wrongWords) {
-    QString text = QString("%1 - %2\n\n你的答案: %3")
+    QString text = QString("Q: %1 - %2\n\nA: %3")
                        .arg(entry.word)
                        .arg(entry.definition)
                        .arg(entry.userAnswer);
