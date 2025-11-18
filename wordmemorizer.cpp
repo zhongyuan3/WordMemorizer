@@ -47,8 +47,9 @@ QSize PracticeResultDelegate::sizeHint(const QStyleOptionViewItem& option, const
     return QStyledItemDelegate::sizeHint(option, index);
 }
 
-#define STYLE_FILE_PATH ":/styles/main.qss"
-#define DATA_FILE_NAME "words.json"
+static constexpr const char* STYLE_FILE_PATH = ":/styles/main.qss";
+static constexpr const char* DATA_FILE_NAME = "words.json";
+static constexpr const char* PRACTICE_RECORDS_FILE_NAME = "practice_records.json";
 
 WordMemorizer::WordMemorizer(QWidget* parent)
     : QMainWindow(parent),
@@ -76,8 +77,8 @@ WordMemorizer::WordMemorizer(QWidget* parent)
         return;
     }
 
-    QString dataFile = writeDir.absoluteFilePath(DATA_FILE_NAME);
-    m_db = WordDatabase(dataFile);
+    m_db.setFilename(writeDir.absoluteFilePath(DATA_FILE_NAME));
+    m_db.setPracticeRecordsFilename(writeDir.absoluteFilePath(PRACTICE_RECORDS_FILE_NAME));
     std::optional<WordDatabaseError> err = m_db.loadFromFile();
     if (err) {
         QMessageBox::critical(this, "错误", err.value().message());
@@ -86,6 +87,8 @@ WordMemorizer::WordMemorizer(QWidget* parent)
     setupUi();
     setupStyle();
     syncAndUpdateWordList();
+    updatePracticeRecordConstViews();
+    updatePracticeRecordList();
     loadSearchCompleterModel();
 }
 
@@ -134,6 +137,17 @@ void WordMemorizer::onSearchEditReturnPressed() {
     updateWordList();
 }
 
+void WordMemorizer::onPracticeRecordDoubleClicked(QListWidgetItem* item) {
+    if (!item) {
+        return;
+    }
+
+    qulonglong idx = item->data(Qt::UserRole).toULongLong();
+    const PracticeRecord& record = m_db.getPracticeRecords()[idx];
+    m_practiceRecordDisplayer->displayRecord(record);
+    m_practiceRecordDisplayer->show();
+}
+
 void WordMemorizer::setupUi() {
     QWidget* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
@@ -142,15 +156,21 @@ void WordMemorizer::setupUi() {
 
     // 创建各个功能区域的UI组件
     QGroupBox* wordsGroup = createWordsGroup();
-    QGroupBox* practiceOptionsGroup = createPracticeOptionsGroup();
+    QGroupBox* practiceRecordGroup = createPracticeRecordGroup();
     QGroupBox* practiceGroup = createPracticeGroup();
 
     // 创建编辑对话框
     createEditDialog();
 
+    // 创建练习记录详情显示窗口
+    m_practiceRecordDisplayer = new PracticeRecordDisplayer(this);
+    m_practiceRecordDisplayer->setupUi();
+
     // 添加到主布局
-    mainLayout->addWidget(wordsGroup);
-    mainLayout->addWidget(practiceOptionsGroup);
+    QHBoxLayout* layout = new QHBoxLayout();
+    layout->addWidget(wordsGroup);
+    layout->addWidget(practiceRecordGroup);
+    mainLayout->addLayout(layout);
     mainLayout->addWidget(practiceGroup);
 
     // 设置信号槽连接
@@ -231,6 +251,10 @@ void WordMemorizer::setupConnections() {
     connect(qApp, &QApplication::aboutToQuit, this, [this]() {
         saveDatabase();
     });
+
+    // 练习记录详情显示窗口相关连接
+    connect(m_practiceRecordListWidget, &QListWidget::itemDoubleClicked, this,
+            &WordMemorizer::onPracticeRecordDoubleClicked);
 }
 
 QGroupBox* WordMemorizer::createWordsGroup() {
@@ -391,11 +415,28 @@ void WordMemorizer::setupContextMenu() {
     m_wordListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 }
 
-QGroupBox* WordMemorizer::createPracticeOptionsGroup() {
-    QGroupBox* practiceOptionsGroup = new QGroupBox;
-    practiceOptionsGroup->setObjectName("practiceOptionsGroup");
+QGroupBox* WordMemorizer::createPracticeRecordGroup() {
+    // 创建练习记录列表
+    m_practiceRecordListWidget = new QListWidget;
+    m_practiceRecordListWidget->setObjectName("m_practiceRecordListWidget");
 
-    QVBoxLayout* practiceLayout = new QVBoxLayout;
+    // 创建练习设置布局
+    QVBoxLayout* practiceOptionsLayout = createPracticeOptionsLayout();
+
+    // 创建布局
+    QVBoxLayout* practiceRecordLayout = new QVBoxLayout;
+    practiceRecordLayout->addWidget(m_practiceRecordListWidget);
+    practiceRecordLayout->addLayout(practiceOptionsLayout);
+
+    QGroupBox* practiceRecordGroup = new QGroupBox;
+    practiceRecordGroup->setObjectName("practiceRecordGroup");
+    practiceRecordGroup->setLayout(practiceRecordLayout);
+
+    return practiceRecordGroup;
+}
+
+QVBoxLayout* WordMemorizer::createPracticeOptionsLayout() {
+    QVBoxLayout* practiceOptionsLayout = new QVBoxLayout;
 
     QHBoxLayout* modeLayout = new QHBoxLayout;
     m_practiceModeCombo = new QComboBox;
@@ -410,15 +451,13 @@ QGroupBox* WordMemorizer::createPracticeOptionsGroup() {
 
     modeLayout->addWidget(m_practiceModeCombo);
     modeLayout->addWidget(m_wordCountSpin);
-    practiceLayout->addLayout(modeLayout);
+    practiceOptionsLayout->addLayout(modeLayout);
 
     m_startPracticeButton = new QPushButton("开始练习");
     m_startPracticeButton->setObjectName("m_startPracticeButton");
-    practiceLayout->addWidget(m_startPracticeButton);
+    practiceOptionsLayout->addWidget(m_startPracticeButton);
 
-    practiceOptionsGroup->setLayout(practiceLayout);
-
-    return practiceOptionsGroup;
+    return practiceOptionsLayout;
 }
 
 QGroupBox* WordMemorizer::createPracticeGroup() {
@@ -572,6 +611,34 @@ void WordMemorizer::syncAndUpdateWordList() {
     updateWordList();
 }
 
+void WordMemorizer::updatePracticeRecordConstViews() {
+    m_practiceRecordConstViews.clear();
+    const QVector<PracticeRecord>& records = m_db.getPracticeRecords();
+    for (qsizetype i = 0; i < records.size(); ++i) {
+        m_practiceRecordConstViews.append({i, records[i]});
+    }
+}
+
+void WordMemorizer::updatePracticeRecordList() {
+    m_practiceRecordListWidget->clear();
+    for (const PracticeRecordConstView& view : m_practiceRecordConstViews) {
+        QString recordText = QString("%1: 练习时长: %2, 总数: %3, 正确率: %4%")
+                                 .arg(view.record.practiceTime.toString("yyyy-MM-dd hh:mm:ss"))
+                                 .arg(view.record.duration.toString("hh:mm:ss"))
+                                 .arg(view.record.wordCount())
+                                 .arg(view.record.correctRate, 0, 'f', 2);
+        QListWidgetItem* item = new QListWidgetItem(recordText);
+        QVariant data = static_cast<qulonglong>(view.index);
+        item->setData(Qt::UserRole, data);
+        m_practiceRecordListWidget->addItem(item);
+    }
+}
+
+void WordMemorizer::syncAndUpdatePracticeRecordList() {
+    updatePracticeRecordConstViews();
+    updatePracticeRecordList();
+}
+
 void WordMemorizer::loadSearchCompleterModel() {
     const QVector<WordEntry>& words = m_db.getWords();
     QStringList wordList;
@@ -703,13 +770,19 @@ void WordMemorizer::onStartPractice() {
     m_practiceAccuracyLabel->setText("答对题数\n正确率");
 
     findChild<QGroupBox*>("wordsGroup")->hide();
-    findChild<QGroupBox*>("practiceOptionsGroup")->hide();
+    findChild<QGroupBox*>("practiceRecordGroup")->hide();
+
+    m_practiceRecord.practiceTime = QDateTime::currentDateTime();
+    m_practiceRecord.correctWords.clear();
+    m_practiceRecord.wrongWords.clear();
 
     m_practiceTimer->start();
     updateTimerDisplay();
     if (m_currentMode == PracticeMode::WordToDefinition) {
+        m_practiceRecord.mode = PracticeMode::WordToDefinition;
         startModeWordToDefinition();
     } else {
+        m_practiceRecord.mode = PracticeMode::DefinitionToWord;
         startModeDefinitionToWord();
     }
 }
@@ -764,14 +837,13 @@ void WordMemorizer::onPracticeSubmit() {
         isCorrect = correct.word.contains(userAnswer, Qt::CaseInsensitive);
     }
 
-    if (!isCorrect) {
-        correct.totalErrors++;
-    }
-
     if (isCorrect) {
+        m_practiceRecord.correctWords.append({correct.word, correct.definition, userAnswer});
         m_correctCount++;
         m_questionLabel->setText("<font color='green'>回答正确</font>");
     } else {
+        m_practiceRecord.wrongWords.append({correct.word, correct.definition, userAnswer});
+        correct.totalErrors++;
         m_questionLabel->setText("<font color='red'>回答错误</font>");
     }
 
@@ -804,6 +876,11 @@ void WordMemorizer::endPractice() {
     QString result =
         QString("答对题数: %1 / %2\n正确率: %3%").arg(m_correctCount).arg(m_totalQuestions).arg(accuracy, 0, 'f', 1);
 
+    m_practiceRecord.duration = QTime(0, 0, 0).addSecs(m_elapsedSeconds);
+    m_practiceRecord.correctRate = accuracy;
+    m_db.getMutPracticeRecords().append(m_practiceRecord);
+    syncAndUpdatePracticeRecordList();
+
     m_questionLabel->setText("练习结束");
     m_practiceAccuracyLabel->setText(result);
     m_answerEdit->clear();
@@ -818,14 +895,14 @@ void WordMemorizer::onExitPractice() {
     // 显示单词列表和练习选项，隐藏练习界面
     QGroupBox* practiceGroup = findChild<QGroupBox*>("practiceGroup");
     QGroupBox* wordsGroup = findChild<QGroupBox*>("wordsGroup");
-    QGroupBox* practiceOptionsGroup = findChild<QGroupBox*>("practiceOptionsGroup");
+    QGroupBox* practiceRecordGroup = findChild<QGroupBox*>("practiceRecordGroup");
 
     if (practiceGroup)
         practiceGroup->hide();
     if (wordsGroup)
         wordsGroup->show();
-    if (practiceOptionsGroup)
-        practiceOptionsGroup->show();
+    if (practiceRecordGroup)
+        practiceRecordGroup->show();
 
     // 保存练习后的状态
     saveDatabase();
@@ -993,8 +1070,50 @@ void WordMemorizer::setupStyle() {
         QTextStream styleStream(&styleFile);
         QString styleSheet = styleStream.readAll();
         setStyleSheet(styleSheet);
+        m_practiceRecordDisplayer->setupStyle(styleSheet);
         styleFile.close();
     } else {
         QMessageBox::critical(this, "错误", "无法加载样式表");
+    }
+}
+
+void PracticeRecordDisplayer::setupUi() {
+    QWidget* centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+
+    m_practiceTimeLabel = new QLabel("");
+    m_practiceDurationLabel = new QLabel("");
+    m_practiceCorrectRateLabel = new QLabel("");
+    m_practiceModeLabel = new QLabel("");
+    m_wrongWordsList = new QListWidget();
+    QLabel* wrongWordsListLabel = new QLabel("错误单词:");
+    m_wrongWordsList->setItemDelegate(new PracticeResultDelegate(this));
+
+    mainLayout->addWidget(m_practiceTimeLabel);
+    mainLayout->addWidget(m_practiceDurationLabel);
+    mainLayout->addWidget(m_practiceCorrectRateLabel);
+    mainLayout->addWidget(m_practiceModeLabel);
+    mainLayout->addWidget(wrongWordsListLabel);
+    mainLayout->addWidget(m_wrongWordsList);
+}
+
+void PracticeRecordDisplayer::setupStyle(const QString& styleSheet) {
+    setStyleSheet(styleSheet);
+}
+
+void PracticeRecordDisplayer::displayRecord(const PracticeRecord& record) {
+    m_practiceTimeLabel->setText(QString("练习时间: %1").arg(record.practiceTime.toString("yyyy-MM-dd hh:mm:ss")));
+    m_practiceDurationLabel->setText(QString("练习时长: %1").arg(record.duration.toString("hh:mm:ss")));
+    m_practiceCorrectRateLabel->setText(QString("正确率: %1%").arg(record.correctRate));
+    m_practiceModeLabel->setText(
+        QString("练习模式: %1").arg(record.mode == PracticeMode::WordToDefinition ? "单词到定义" : "定义到单词"));
+
+    m_wrongWordsList->clear();
+    for (const PracticeEntry& entry : record.wrongWords) {
+        QString text = QString("%1 - %2\n\n你的答案: %3").arg(entry.word).arg(entry.definition).arg(entry.userAnswer);
+        QListWidgetItem* item = new QListWidgetItem(text);
+        item->setData(Qt::UserRole, QVariant::fromValue(true));
+        m_wrongWordsList->addItem(item);
     }
 }

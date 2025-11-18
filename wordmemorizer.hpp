@@ -1,6 +1,7 @@
 #ifndef WORDMEMORIZER_HPP
 #define WORDMEMORIZER_HPP
 
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QCompleter>
 #include <QFormLayout>
@@ -23,9 +24,6 @@
 
 #include "worddatabase.hpp"
 
-/**
- * @brief 练习结果列表项代理，用于自定义显示正确/错误的样式
- */
 class PracticeResultDelegate : public QStyledItemDelegate {
     Q_OBJECT
 public:
@@ -33,6 +31,35 @@ public:
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+};
+
+class PracticeRecordDisplayer : public QMainWindow {
+    Q_OBJECT
+
+public:
+    explicit PracticeRecordDisplayer(QWidget* parent = nullptr) : QMainWindow(parent) {
+        setWindowTitle("练习记录详情");
+        resize(400, 500);
+        hide();
+    }
+
+    void setupUi();
+    void setupStyle(const QString& styleSheet);
+
+    void displayRecord(const PracticeRecord& record);
+
+protected:
+    void closeEvent(QCloseEvent* event) override {
+        event->ignore();
+        hide();
+    }
+
+private:
+    QLabel* m_practiceTimeLabel = nullptr;
+    QLabel* m_practiceDurationLabel = nullptr;
+    QLabel* m_practiceCorrectRateLabel = nullptr;
+    QLabel* m_practiceModeLabel = nullptr;
+    QListWidget* m_wrongWordsList = nullptr;
 };
 
 /**
@@ -44,14 +71,6 @@ class WordMemorizer : public QMainWindow {
 public:
     explicit WordMemorizer(QWidget* parent = nullptr);
     ~WordMemorizer() override;
-
-    /**
-     * @brief 练习模式枚举
-     */
-    enum class PracticeMode {
-        WordToDefinition = 0,  ///< 给出单词，填写释义
-        DefinitionToWord       ///< 给出释义，填写单词
-    };
 
     /**
      * @brief 排序方式枚举
@@ -86,6 +105,9 @@ private slots:
     void onSortOrderChanged();
     void onSearchEditReturnPressed();
 
+    // 练习记录相关槽函数
+    void onPracticeRecordDoubleClicked(QListWidgetItem* item);
+
     // 定时器槽函数
     void onPracticeTimerTimeout();
 
@@ -102,7 +124,8 @@ private:
     QVBoxLayout* createWordListLayout();
     void setupSearchCompleter();
     void setupContextMenu();
-    QGroupBox* createPracticeOptionsGroup();
+    QGroupBox* createPracticeRecordGroup();
+    QVBoxLayout* createPracticeOptionsLayout();
     QGroupBox* createPracticeGroup();
     void createEditDialog();
 
@@ -110,6 +133,9 @@ private:
     void syncWordListDataCacheFromDb();
     void syncAndUpdateWordList();
     void updateWordList();
+    void updatePracticeRecordConstViews();
+    void updatePracticeRecordList();
+    void syncAndUpdatePracticeRecordList();
 
     // 搜索相关函数
     void loadSearchCompleterModel();
@@ -126,11 +152,6 @@ private:
 
     // 数据持久化函数
     void saveDatabase();
-
-    // 获取UI组件的辅助函数
-    QGroupBox* getPracticeGroupBox() const;
-    QGroupBox* getWordsGroupBox() const;
-    QGroupBox* getPracticeOptionsGroupBox() const;
 
     // 数据库对象
     WordDatabase m_db;
@@ -173,6 +194,11 @@ private:
     QPushButton* m_editCancelButton;
     QString m_editingOriginalWord;
 
+    // 练习记录相关
+    QListWidget* m_practiceRecordListWidget;
+    QVector<PracticeRecordConstView> m_practiceRecordConstViews;
+    PracticeRecordDisplayer* m_practiceRecordDisplayer;
+
     // 练习设置相关
     QPushButton* m_startPracticeButton;
     QComboBox* m_practiceModeCombo;
@@ -195,6 +221,7 @@ private:
     int m_correctCount;
     int m_totalQuestions;
     PracticeMode m_currentMode;
+    PracticeRecord m_practiceRecord;
 };
 
 #endif  // WORDMEMORIZER_HPP

@@ -1,22 +1,21 @@
 #include "worddatabase.hpp"
 
-#include <QDebug>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
-std::optional<WordDatabaseError> WordDatabase::addWord(const QString &word, const QString &definition, int priority) {
+std::optional<WordDatabaseError> WordDatabase::addWord(const QString& word, const QString& definition, int priority) {
     if (word.isEmpty()) {
-        return std::optional<WordDatabaseError>("单词不能为空");
+        return "单词不能为空";
     }
 
     if (definition.isEmpty()) {
-        return std::optional<WordDatabaseError>("定义不能为空");
+        return "定义不能为空";
     }
 
     if (containsWord(word)) {
-        return std::optional<WordDatabaseError>("单词已存在");
+        return "单词已存在";
     }
 
     QDateTime now = QDateTime::currentDateTime();
@@ -26,8 +25,8 @@ std::optional<WordDatabaseError> WordDatabase::addWord(const QString &word, cons
     return std::nullopt;
 }
 
-bool WordDatabase::containsWord(const QString &word) const {
-    for (const auto &entry : m_words) {
+bool WordDatabase::containsWord(const QString& word) const {
+    for (const auto& entry : m_words) {
         if (entry.word == word) {
             return true;
         }
@@ -36,10 +35,10 @@ bool WordDatabase::containsWord(const QString &word) const {
     return false;
 }
 
-QVector<std::tuple<qsizetype, const WordEntry *>> WordDatabase::queryWords(const QString &query) const {
-    QVector<std::tuple<qsizetype, const WordEntry *>> results;
+QVector<std::tuple<qsizetype, const WordEntry*>> WordDatabase::queryWords(const QString& query) const {
+    QVector<std::tuple<qsizetype, const WordEntry*>> results;
     for (qsizetype i = 0; i < m_words.size(); ++i) {
-        const WordEntry *entry = &m_words[i];
+        const WordEntry* entry = &m_words[i];
         if (entry->word.contains(query)) {
             results.append({i, entry});
         }
@@ -47,84 +46,181 @@ QVector<std::tuple<qsizetype, const WordEntry *>> WordDatabase::queryWords(const
     return results;
 }
 
-std::optional<WordDatabaseError> WordDatabase::removeWord(const QString &word) {
+std::optional<WordDatabaseError> WordDatabase::removeWord(const QString& word) {
     for (qsizetype i = 0; i < m_words.size(); ++i) {
         if (m_words[i].word == word) {
             m_words.removeAt(i);
             return std::nullopt;
         }
     }
-    return std::optional<WordDatabaseError>("单词不存在");
+    return "单词不存在";
 }
 
 std::optional<WordDatabaseError> WordDatabase::saveToFile() const {
-    QJsonArray wordsArray;
-
-    for (const auto &entry : m_words) {
-        QJsonObject obj;
-        obj["word"] = entry.word;
-        obj["definition"] = entry.definition;
-        obj["priority"] = entry.priority;
-        obj["createdAt"] = entry.createdAt.toString(Qt::ISODate);
-        obj["modifiedAt"] = entry.modifiedAt.toString(Qt::ISODate);
-        obj["totalAttempts"] = entry.totalAttempts;
-        obj["totalErrors"] = entry.totalErrors;
-        wordsArray.append(obj);
+    auto err = saveWordsToFile();
+    if (err) {
+        return err;
     }
 
-    QJsonDocument doc = QJsonDocument(wordsArray);
-
-    QFile file = QFile(m_filename);
-
-    if (!file.open(QIODevice::WriteOnly)) {
-        return std::optional<WordDatabaseError>("无法打开文件：" + m_filename);
+    err = savePracticeRecordsToFile();
+    if (err) {
+        return err;
     }
 
-    file.write(doc.toJson());
-    file.close();
     return std::nullopt;
 }
 
 std::optional<WordDatabaseError> WordDatabase::loadFromFile() {
-    QFile file(m_filename);
-    if (!file.open(QIODevice::ReadOnly)) {
-        return std::optional<WordDatabaseError>("无法打开文件：" + m_filename);
-    }
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (!doc.isArray()) {
-        return std::optional<WordDatabaseError>("文件中的 JSON 格式无效：" + m_filename);
+    auto err = loadWordsFromFile();
+    if (err.has_value()) {
+        return err;
     }
 
-    const QJsonArray wordsArray = doc.array();
-    m_words.clear();
-    const QDateTime now = QDateTime::currentDateTime();
+    err = loadPracticeRecordsFromFile();
+    if (err.has_value()) {
+        return err;
+    }
 
-    for (const auto &value : wordsArray) {
+    return std::nullopt;
+}
+
+static QJsonArray practiceEntriesSerialize(const QVector<PracticeEntry>& practiceEntries) {
+    QJsonArray array;
+    for (const auto& entry : practiceEntries) {
+        QJsonObject obj;
+        obj.insert("word", entry.word);
+        obj.insert("definition", entry.definition);
+        obj.insert("userAnswer", entry.userAnswer);
+        array.append(obj);
+    }
+    return array;
+}
+
+static QJsonObject practiceRecordSerialize(const PracticeRecord& record) {
+    QJsonObject obj;
+    obj.insert("practiceTime", record.practiceTime.toString(Qt::ISODate));
+    obj.insert("duration", record.duration.toString("hh:mm:ss"));
+    obj.insert("correctWords", practiceEntriesSerialize(record.correctWords));
+    obj.insert("wrongWords", practiceEntriesSerialize(record.wrongWords));
+    obj.insert("correctRate", record.correctRate);
+    obj.insert("mode", static_cast<int>(record.mode));
+    return obj;
+}
+
+static QJsonArray practiceRecordsSerialize(const QVector<PracticeRecord>& records) {
+    QJsonArray array{};
+    for (const auto& record : records) {
+        array.append(practiceRecordSerialize(record));
+    }
+    return array;
+}
+
+static QJsonArray wordsSerialize(const QVector<WordEntry>& words) {
+    QJsonArray array{};
+    for (const auto& word : words) {
+        QJsonObject obj;
+        obj.insert("word", word.word);
+        obj.insert("definition", word.definition);
+        obj.insert("createdAt", word.createdAt.toString(Qt::ISODate));
+        obj.insert("modifiedAt", word.modifiedAt.toString(Qt::ISODate));
+        obj.insert("priority", word.priority);
+        obj.insert("totalAttempts", word.totalAttempts);
+        obj.insert("totalErrors", word.totalErrors);
+        array.append(obj);
+    }
+    return array;
+}
+
+static QVector<PracticeEntry> practiceEntriesDeserialize(const QJsonArray& practiceEntryArray) {
+    QVector<PracticeEntry> entries;
+    for (const auto& value : practiceEntryArray) {
+        if (!value.isObject())
+            continue;
+        QJsonObject wordObj = value.toObject();
+        QString word = wordObj.value("word").toString();
+        QString definition = wordObj.value("definition").toString();
+        QString userAnswer = wordObj.value("userAnswer").toString();
+        if (word.isEmpty() || definition.isEmpty() || userAnswer.isEmpty())
+            continue;
+        entries.append({word, definition, userAnswer});
+    }
+    return entries;
+}
+
+static std::optional<PracticeRecord> practiceRecordDeserialize(const QJsonObject& obj) {
+    PracticeRecord record;
+
+    if (obj.value("practiceTime").isUndefined())
+        return std::nullopt;
+    QDateTime practiceTime = QDateTime::fromString(obj["practiceTime"].toString(), Qt::ISODate);
+    if (!practiceTime.isValid())
+        return std::nullopt;
+    record.practiceTime = std::move(practiceTime);
+
+    if (obj.value("duration").isUndefined())
+        return std::nullopt;
+    QTime duration = QTime::fromString(obj["duration"].toString(), "hh:mm:ss");
+    if (!duration.isValid())
+        return std::nullopt;
+    record.duration = std::move(duration);
+
+    if (!obj.value("correctWords").isArray())
+        return std::nullopt;
+    QJsonArray correctWordsArray = obj.value("correctWords").toArray();
+    record.correctWords = practiceEntriesDeserialize(correctWordsArray);
+
+    if (!obj.value("wrongWords").isArray())
+        return std::nullopt;
+    QJsonArray wrongWordsArray = obj.value("wrongWords").toArray();
+    record.wrongWords = practiceEntriesDeserialize(wrongWordsArray);
+
+    if (obj.value("correctRate").isUndefined())
+        return std::nullopt;
+    record.correctRate = obj.value("correctRate").toDouble();
+
+    if (obj.value("mode").isUndefined())
+        return std::nullopt;
+    record.mode = static_cast<PracticeMode>(obj.value("mode").toInt());
+
+    return record;
+}
+
+static QVector<PracticeRecord> practiceRecordsDeserialize(const QJsonArray& recordsArray) {
+    QVector<PracticeRecord> records{};
+    for (const auto& value : recordsArray) {
+        if (!value.isObject())
+            continue;
+        QJsonObject recordObj = value.toObject();
+        auto record = practiceRecordDeserialize(recordObj);
+        if (record.has_value()) {
+            records.append(record.value());
+        }
+    }
+    return records;
+}
+
+static QVector<WordEntry> wordsDeserialize(const QJsonArray& wordsArray) {
+    QVector<WordEntry> words{};
+    QDateTime now = QDateTime::currentDateTime();
+    for (const auto& value : wordsArray) {
         if (!value.isObject())
             continue;
 
         const QJsonObject obj = value.toObject();
 
+        if (!obj.contains("word"))
+            continue;
         QString word = obj.value("word").toString();
+
+        if (!obj.contains("definition"))
+            continue;
         QString definition = obj.value("definition").toString();
 
-        if (word.isEmpty() && definition.isEmpty())
-            continue;
-
-        QDateTime createdAt;
-        if (obj.contains("createdAt") && !obj["createdAt"].toString().isEmpty()) {
-            createdAt = QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate);
-        }
+        QDateTime createdAt = QDateTime::fromString(obj.value("createdAt").toString(), Qt::ISODate);
+        QDateTime modifiedAt = QDateTime::fromString(obj.value("modifiedAt").toString(), Qt::ISODate);
         if (!createdAt.isValid()) {
             createdAt = now;
-        }
-
-        QDateTime modifiedAt;
-        if (obj.contains("modifiedAt") && !obj["modifiedAt"].toString().isEmpty()) {
-            modifiedAt = QDateTime::fromString(obj["modifiedAt"].toString(), Qt::ISODate);
+            modifiedAt = now;
         }
         if (!modifiedAt.isValid()) {
             modifiedAt = now;
@@ -136,25 +232,79 @@ std::optional<WordDatabaseError> WordDatabase::loadFromFile() {
 
         int totalAttempts = obj.value("totalAttempts").toInt(0);
         int totalErrors = obj.value("totalErrors").toInt(0);
-
         if (totalErrors > totalAttempts) {
             totalErrors = totalAttempts;
         }
 
-        m_words.append({word, definition, createdAt, modifiedAt, priority, totalAttempts, totalErrors});
+        words.append({word, definition, createdAt, modifiedAt, priority, totalAttempts, totalErrors});
     }
+    return words;
+}
 
+static std::optional<WordDatabaseError> readJsonArrayFile(const QString& filename, QJsonArray& array) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return "无法打开文件：" + filename;
+    }
+    QByteArray data = file.readAll();
+    file.close();
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (!doc.isArray()) {
+        return "文件中的 JSON 格式无效：" + filename;
+    }
+    array = doc.array();
     return std::nullopt;
 }
 
-std::optional<WordDatabaseError> WordDatabase::updateWord(const QString &oldWord, const QString &newWord,
-                                                          const QString &newDefinition, int newPriority) {
+static std::optional<WordDatabaseError> writeJsonArrayFile(const QString& filename, const QJsonArray& array) {
+    QJsonDocument doc = QJsonDocument(array);
+    QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return "无法打开文件：" + filename;
+    }
+    file.write(doc.toJson());
+    file.close();
+    return std::nullopt;
+}
+
+std::optional<WordDatabaseError> WordDatabase::loadWordsFromFile() {
+    QJsonArray jsonArray;
+    auto err = readJsonArrayFile(m_filename, jsonArray);
+    if (err) {
+        return err;
+    }
+    m_words = wordsDeserialize(jsonArray);
+    return std::nullopt;
+}
+
+std::optional<WordDatabaseError> WordDatabase::loadPracticeRecordsFromFile() {
+    QJsonArray jsonArray;
+    auto err = readJsonArrayFile(m_practiceRecordsFilename, jsonArray);
+    if (err) {
+        return err;
+    }
+    m_practiceRecords = practiceRecordsDeserialize(jsonArray);
+    return std::nullopt;
+}
+
+std::optional<WordDatabaseError> WordDatabase::saveWordsToFile() const {
+    QJsonArray jsonArray = wordsSerialize(m_words);
+    return writeJsonArrayFile(m_filename, jsonArray);
+}
+
+std::optional<WordDatabaseError> WordDatabase::savePracticeRecordsToFile() const {
+    QJsonArray jsonArray = practiceRecordsSerialize(m_practiceRecords);
+    return writeJsonArrayFile(m_practiceRecordsFilename, jsonArray);
+}
+
+std::optional<WordDatabaseError> WordDatabase::updateWord(const QString& oldWord, const QString& newWord,
+                                                          const QString& newDefinition, int newPriority) {
     if (newWord.isEmpty()) {
-        return std::optional<WordDatabaseError>("新单词不能为空");
+        return "新单词不能为空";
     }
 
     if (newDefinition.isEmpty()) {
-        return std::optional<WordDatabaseError>("新定义不能为空");
+        return "新定义不能为空";
     }
 
     for (qsizetype i = 0; i < m_words.size(); ++i) {
@@ -171,5 +321,5 @@ std::optional<WordDatabaseError> WordDatabase::updateWord(const QString &oldWord
         }
     }
 
-    return std::optional<WordDatabaseError>("单词不存在");
+    return "单词不存在";
 }

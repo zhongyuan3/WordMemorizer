@@ -4,7 +4,7 @@
 #include <tuple>
 #include <vector>
 
-double computeEffectivePriority(const WordEntry &entry) {
+double computeEffectivePriority(const WordEntry& entry) {
     const QDateTime now = QDateTime::currentDateTime();
 
     // ============ 1. 基础权重：用户设定的 priority ============
@@ -62,7 +62,7 @@ double computeEffectivePriority(const WordEntry &entry) {
     return effective;
 }
 
-QVector<qsizetype> radomlySelectWords(const QVector<WordEntry> &wordEntries, int count) {
+QVector<qsizetype> radomlySelectWords(const QVector<WordEntry>& wordEntries, int count) {
     auto indicesAndK = std::vector<std::tuple<qsizetype, double>>();
     for (qsizetype i = 0; i < wordEntries.size(); ++i) {
         indicesAndK.emplace_back(i, 0.0);
@@ -72,14 +72,14 @@ QVector<qsizetype> radomlySelectWords(const QVector<WordEntry> &wordEntries, int
     auto gen = std::mt19937(seed);
     auto dis = std::uniform_real_distribution<double>(0.0, 1.0);
 
-    for (auto &[i, k] : indicesAndK) {
+    for (auto& [i, k] : indicesAndK) {
         auto u = dis(gen);  // u ∈ [0,1)
         if (u == 0.0)
             u = std::numeric_limits<double>::min();  // 避免 log(0) 或 pow(0, ...)
         k = std::pow(u, 1.0 / computeEffectivePriority(wordEntries[i]));
     }
 
-    std::sort(indicesAndK.begin(), indicesAndK.end(), [](const auto &a, const auto &b) {
+    std::sort(indicesAndK.begin(), indicesAndK.end(), [](const auto& a, const auto& b) {
         return std::get<1>(a) > std::get<1>(b);
     });
 
@@ -90,7 +90,7 @@ QVector<qsizetype> radomlySelectWords(const QVector<WordEntry> &wordEntries, int
     return selectedIndices;
 }
 
-QString randomlySelectDefinition(const WordEntry &wordEntry) {
+QString randomlySelectDefinition(const WordEntry& wordEntry) {
     QStringList parts = wordEntry.definition.split(",");
     if (parts.isEmpty()) {
         return QString();
