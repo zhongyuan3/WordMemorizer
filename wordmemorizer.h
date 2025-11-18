@@ -1,5 +1,5 @@
-#ifndef WORDMEMORIZER_HPP
-#define WORDMEMORIZER_HPP
+#ifndef WORDMEMORIZER_H
+#define WORDMEMORIZER_H
 
 #include <QCloseEvent>
 #include <QComboBox>
@@ -22,7 +22,7 @@
 #include <QVBoxLayout>
 #include <QVariant>
 
-#include "worddatabase.hpp"
+#include "worddatabase.h"
 
 class PracticeResultDelegate : public QStyledItemDelegate {
   Q_OBJECT
@@ -230,4 +230,4 @@ class WordMemorizer : public QMainWindow {
   PracticeRecord m_practiceRecord;
 };
 
-#endif  // WORDMEMORIZER_HPP
+#endif

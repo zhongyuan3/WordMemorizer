@@ -1,4 +1,4 @@
-#include "algorithm.hpp"
+#include "algorithm.h"
 
 #include <random>
 #include <tuple>

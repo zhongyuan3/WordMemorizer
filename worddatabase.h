@@ -1,5 +1,5 @@
-#ifndef WORDDATABASE_HPP
-#define WORDDATABASE_HPP
+#ifndef WORDDATABASE_H
+#define WORDDATABASE_H
 
 #include <QDateTime>
 #include <QString>
@@ -108,4 +108,4 @@ class WordDatabase {
   QString m_practiceRecordsFilename;
 };
 
-#endif  // WORDDATABASE_H
+#endif

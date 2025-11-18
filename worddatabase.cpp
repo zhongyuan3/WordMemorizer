@@ -1,4 +1,4 @@
-#include "worddatabase.hpp"
+#include "worddatabase.h"
 
 #include <QFile>
 #include <QJsonArray>

@@ -1,9 +1,9 @@
-#ifndef ALGORITHM_HPP
-#define ALGORITHM_HPP
+#ifndef ALGORITHM_H
+#define ALGORITHM_H
 
 #include <QVector>
 
-#include "worddatabase.hpp"
+#include "worddatabase.h"
 
 QVector<qsizetype> radomlySelectWords(const QVector<WordEntry>& wordEntries,
                                       int count);

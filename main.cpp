@@ -1,6 +1,6 @@
 #include <QApplication>
 
-#include "wordmemorizer.hpp"
+#include "wordmemorizer.h"
 
 static constexpr const char* LOGO_PATH = ":/icons/logo.png";
 

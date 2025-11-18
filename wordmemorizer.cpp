@@ -1,4 +1,4 @@
-#include "wordmemorizer.hpp"
+#include "wordmemorizer.h"
 
 #include <QApplication>
 #include <QDir>
@@ -16,7 +16,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-#include "algorithm.hpp"
+#include "algorithm.h"
 
 // PracticeResultDelegate 类实现
 PracticeResultDelegate::PracticeResultDelegate(QObject* parent)
