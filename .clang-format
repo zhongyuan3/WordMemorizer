@@ -1,14 +1,1 @@
 BasedOnStyle: Google
-AccessModifierOffset: -4
-AllowShortBlocksOnASingleLine: Never
-AllowShortCaseExpressionOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortCompoundRequirementOnASingleLine: false
-AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLambdasOnASingleLine: None
-AllowShortLoopsOnASingleLine: false
-ColumnLimit: 120
-IndentWidth: 4
-UseTab: Never

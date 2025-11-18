@@ -5,7 +5,8 @@
 
 #include "worddatabase.hpp"
 
-QVector<qsizetype> radomlySelectWords(const QVector<WordEntry>& wordEntries, int count);
+QVector<qsizetype> radomlySelectWords(const QVector<WordEntry>& wordEntries,
+                                      int count);
 QString randomlySelectDefinition(const WordEntry& wordEntry);
 
 #endif
