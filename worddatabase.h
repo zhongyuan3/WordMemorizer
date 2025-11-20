@@ -16,6 +16,11 @@ struct WordEntry {
     int totalErrors = 0;
 };
 
+struct WordEntryConstView {
+    qsizetype index;
+    const WordEntry *entry;
+};
+
 struct PracticeEntry {
     QString word;
     QString definition;
@@ -86,8 +91,6 @@ public:
     QVector<WordEntry> &getMutWords() { return m_words; }
     int wordCount() const { return m_words.size(); }
     bool containsWord(const QString &word) const;
-    QVector<std::tuple<qsizetype, const WordEntry *>> queryWords(
-        const QString &query) const;
     std::optional<WordDatabaseError> addWord(const QString &word,
                                              const QString &definition,
                                              int priority);

@@ -54,20 +54,7 @@ static constexpr const char *DATA_FILE_NAME = "words.json";
 static constexpr const char *PRACTICE_RECORDS_FILE_NAME =
     "practice_records.json";
 
-WordMemorizer::WordMemorizer(QWidget *parent)
-    : QMainWindow(parent),
-      m_currentIndex(-1),
-      m_correctCount(0),
-      m_totalQuestions(0),
-      m_isSearching(false),
-      m_currentMode(PracticeMode::WordToDefinition),
-      m_wordListSortOrder(SortOrder::CreationTimeAsc),
-      m_wordListDataCache(),
-      m_elapsedSeconds(0),
-      m_wordListContextMenu(nullptr),
-      m_editWordAction(nullptr),
-      m_deleteWordAction(nullptr),
-      m_editDialog(nullptr) {
+WordMemorizer::WordMemorizer(QWidget *parent) : QMainWindow(parent) {
     QString writePath =
         QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (writePath.isEmpty()) {
@@ -128,11 +115,18 @@ void WordMemorizer::onSearchEditReturnPressed() {
         return;
     }
 
-    auto results = m_db.queryWords(searchText);
-    if (results.isEmpty()) {
-        m_wordListWidget->clear();
+    m_wordListDataCache.clear();
+
+    const auto &words = m_db.getWords();
+    for (qsizetype i = 0; i < words.size(); ++i) {
+        const WordEntry &entry = words[i];
+        if (entry.word.contains(searchText, Qt::CaseInsensitive)) {
+            m_wordListDataCache.append({i, &entry});
+        }
+    }
+
+    if (m_wordListDataCache.isEmpty()) {
         QMessageBox::information(this, "提示", "未找到匹配单词");
-        return;
     }
 
     if (!m_isSearching) {
@@ -140,7 +134,6 @@ void WordMemorizer::onSearchEditReturnPressed() {
         m_searchCancelButton->setHidden(false);
     }
 
-    m_wordListDataCache = results;
     updateWordList();
 }
 
@@ -959,73 +952,67 @@ void WordMemorizer::updateWordList() {
     switch (m_wordListSortOrder) {
         default:
         case SortOrder::CreationTimeAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->createdAt <
-                                 std::get<1>(b)->createdAt;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->createdAt < b.entry->createdAt;
+                });
             break;
         case SortOrder::CreationTimeDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->createdAt >
-                                 std::get<1>(b)->createdAt;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->createdAt > b.entry->createdAt;
+                });
             break;
         case SortOrder::ModifiedAtAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->modifiedAt <
-                                 std::get<1>(b)->modifiedAt;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->modifiedAt < b.entry->modifiedAt;
+                });
             break;
         case SortOrder::ModifiedAtDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->modifiedAt >
-                                 std::get<1>(b)->modifiedAt;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->modifiedAt > b.entry->modifiedAt;
+                });
             break;
         case SortOrder::PriorityAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->priority <
-                                 std::get<1>(b)->priority;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->priority < b.entry->priority;
+                });
             break;
         case SortOrder::PriorityDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->priority >
-                                 std::get<1>(b)->priority;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->priority > b.entry->priority;
+                });
             break;
         case SortOrder::AlphabeticalAsc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->word < std::get<1>(b)->word;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->word < b.entry->word;
+                });
             break;
         case SortOrder::AlphabeticalDesc:
-            std::sort(m_wordListDataCache.begin(), m_wordListDataCache.end(),
-                      [](const std::tuple<qsizetype, const WordEntry *> &a,
-                         const std::tuple<qsizetype, const WordEntry *> &b) {
-                          return std::get<1>(a)->word > std::get<1>(b)->word;
-                      });
+            std::sort(
+                m_wordListDataCache.begin(), m_wordListDataCache.end(),
+                [](const WordEntryConstView &a, const WordEntryConstView &b) {
+                    return a.entry->word > b.entry->word;
+                });
             break;
     }
 
     m_wordListWidget->clear();
-    for (const auto &[index, entry] : m_wordListDataCache) {
-        QListWidgetItem *item = new QListWidgetItem(entry->word);
-        QVariant value = static_cast<qulonglong>(index);
+    for (const auto &entry : m_wordListDataCache) {
+        QListWidgetItem *item = new QListWidgetItem(entry.entry->word);
+        QVariant value = static_cast<qulonglong>(entry.index);
         item->setData(Qt::UserRole, value);
         m_wordListWidget->addItem(item);
     }

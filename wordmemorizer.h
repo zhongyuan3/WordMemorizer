@@ -157,70 +157,70 @@ private:
     WordDatabase m_db;
 
     // 单词录入相关UI组件
-    QLineEdit *m_wordEdit;
-    QLineEdit *m_definitionEdit;
-    QSpinBox *m_prioritySpin;
-    QListWidget *m_definitionListWidget;
-    QPushButton *m_addDefinitionButton;
-    QPushButton *m_removeDefinitionButton;
-    QPushButton *m_addButton;
-    QPushButton *m_deleteButton;
+    QLineEdit *m_wordEdit = nullptr;
+    QLineEdit *m_definitionEdit = nullptr;
+    QSpinBox *m_prioritySpin = nullptr;
+    QListWidget *m_definitionListWidget = nullptr;
+    QPushButton *m_addDefinitionButton = nullptr;
+    QPushButton *m_removeDefinitionButton = nullptr;
+    QPushButton *m_addButton = nullptr;
+    QPushButton *m_deleteButton = nullptr;
 
     // 单词列表相关UI组件
-    bool m_isSearching;
-    QPushButton *m_searchCancelButton;
-    QLineEdit *m_searchEdit;
-    QCompleter *m_searchCompleter;
-    QStringListModel *m_searchModel;
-    QVector<std::tuple<qsizetype, const WordEntry *>> m_wordListDataCache;
-    QComboBox *m_wordListSortOrderCombo;
-    SortOrder m_wordListSortOrder;
-    QListWidget *m_wordListWidget;
+    bool m_isSearching = false;
+    QPushButton *m_searchCancelButton = nullptr;
+    QLineEdit *m_searchEdit = nullptr;
+    QCompleter *m_searchCompleter = nullptr;
+    QStringListModel *m_searchModel = nullptr;
+    QVector<WordEntryConstView> m_wordListDataCache;
+    QComboBox *m_wordListSortOrderCombo = nullptr;
+    SortOrder m_wordListSortOrder = SortOrder::AlphabeticalAsc;
+    QListWidget *m_wordListWidget = nullptr;
 
     // 上下文菜单相关
-    QMenu *m_wordListContextMenu;
-    QAction *m_editWordAction;
-    QAction *m_deleteWordAction;
+    QMenu *m_wordListContextMenu = nullptr;
+    QAction *m_editWordAction = nullptr;
+    QAction *m_deleteWordAction = nullptr;
 
     // 编辑对话框相关
-    QDialog *m_editDialog;
-    QLineEdit *m_editWordInput;
-    QSpinBox *m_editPrioritySpin;
-    QListWidget *m_editDefinitionList;
-    QLineEdit *m_editDefinitionInput;
-    QPushButton *m_editAddDefButton;
-    QPushButton *m_editRemoveDefButton;
-    QPushButton *m_editSaveButton;
-    QPushButton *m_editCancelButton;
+    QDialog *m_editDialog = nullptr;
+    QLineEdit *m_editWordInput = nullptr;
+    QSpinBox *m_editPrioritySpin = nullptr;
+    QListWidget *m_editDefinitionList = nullptr;
+    QLineEdit *m_editDefinitionInput = nullptr;
+    QPushButton *m_editAddDefButton = nullptr;
+    QPushButton *m_editRemoveDefButton = nullptr;
+    QPushButton *m_editSaveButton = nullptr;
+    QPushButton *m_editCancelButton = nullptr;
     QString m_editingOriginalWord;
 
     // 练习记录相关
-    QListWidget *m_practiceRecordListWidget;
+    QListWidget *m_practiceRecordListWidget = nullptr;
     QVector<PracticeRecordConstView> m_practiceRecordConstViews;
-    PracticeRecordDisplayer *m_practiceRecordDisplayer;
+    PracticeRecordDisplayer *m_practiceRecordDisplayer = nullptr;
 
     // 练习设置相关
-    QPushButton *m_startPracticeButton;
-    QComboBox *m_practiceModeCombo;
-    QSpinBox *m_wordCountSpin;
+    QPushButton *m_startPracticeButton = nullptr;
+    QComboBox *m_practiceModeCombo = nullptr;
+    QSpinBox *m_wordCountSpin = nullptr;
 
     // 练习界面相关
-    QLabel *m_questionLabel;
-    QLineEdit *m_answerEdit;
-    QPushButton *m_submitButton;
+    QLabel *m_questionLabel = nullptr;
+    QLineEdit *m_answerEdit = nullptr;
+    QPushButton *m_submitButton = nullptr;
     QVector<qsizetype> m_practiceWordIndices;
-    QLabel *m_practiceTimerLabel;
-    QTimer *m_practiceTimer;
-    QPushButton *m_exitPracticeButton;
-    QLabel *m_practiceAccuracyLabel;
-    QListWidget *m_practiceWordsListWidget;
+    QLabel *m_practiceTimerLabel = nullptr;
+    QTimer *m_practiceTimer = nullptr;
+    QPushButton *m_exitPracticeButton = nullptr;
+    QLabel *m_practiceAccuracyLabel = nullptr;
+    QListWidget *m_practiceWordsListWidget = nullptr;
 
     // 练习状态变量
-    qint64 m_elapsedSeconds;
-    int m_currentIndex;
-    int m_correctCount;
-    int m_totalQuestions;
-    PracticeMode m_currentMode;
+    qint64 m_elapsedSeconds = 0;
+    int m_currentIndex = -1;
+    int m_correctCount = 0;
+    int m_totalQuestions = 0;
+    PracticeMode m_currentMode = PracticeMode::WordToDefinition;
     PracticeRecord m_practiceRecord;
 };
 
