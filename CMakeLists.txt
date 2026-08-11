@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(WordMemorizer VERSION 0.1 LANGUAGES CXX)
+project(WordMemorizer VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -14,12 +14,42 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
         main.cpp
-        wordmemorizer.h
-        wordmemorizer.cpp
-        worddatabase.h
-        worddatabase.cpp
-        algorithm.h
-        algorithm.cpp
+
+        src/main_window.h
+        src/main_window.cpp
+
+        src/data/models.h
+        src/data/word_database.h
+        src/data/word_database.cpp
+
+        src/core/word_selection.h
+        src/core/word_selection.cpp
+        src/core/practice_session.h
+        src/core/practice_session.cpp
+
+        src/models/word_list_model.h
+        src/models/word_list_model.cpp
+        src/models/practice_record_model.h
+        src/models/practice_record_model.cpp
+
+        src/widgets/definition_editor_widget.h
+        src/widgets/definition_editor_widget.cpp
+        src/widgets/practice_result_delegate.h
+        src/widgets/practice_result_delegate.cpp
+        src/widgets/word_input_widget.h
+        src/widgets/word_input_widget.cpp
+        src/widgets/word_list_widget.h
+        src/widgets/word_list_widget.cpp
+        src/widgets/word_list_delegate.h
+        src/widgets/word_list_delegate.cpp
+        src/widgets/edit_word_dialog.h
+        src/widgets/edit_word_dialog.cpp
+        src/widgets/practice_widget.h
+        src/widgets/practice_widget.cpp
+        src/widgets/practice_record_widget.h
+        src/widgets/practice_record_widget.cpp
+        src/widgets/practice_record_detail.h
+        src/widgets/practice_record_detail.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -41,17 +71,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
             icons/dropdown.png
             icons/logo.png
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET WordMemorizer APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(WordMemorizer SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(WordMemorizer
             ${PROJECT_SOURCES}
@@ -61,11 +85,9 @@ else()
     target_sources(WordMemorizer PRIVATE resources.qrc)
 endif()
 
+target_include_directories(WordMemorizer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(WordMemorizer PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.WordMemorizer)
 endif()
