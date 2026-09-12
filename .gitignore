@@ -1,5 +1,4 @@
 build/
 .vscode/
-*.user
-*.user.*
 .cache/
+.qtcreator/
