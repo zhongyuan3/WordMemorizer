@@ -45,33 +45,64 @@ WordMemorizer 是一款基于 Qt 框架开发的单词记忆辅助工具，帮�
 ## 项目结构
 
 ```
-├── main.cpp                            # 程序入口
-├── CMakeLists.txt                      # CMake 构建文件
-├── resources.qrc                       # Qt 资源文件
-├── styles/
-│   └── main.qss                        # 主样式表
-├── icons/                              # 图标资源
-└── src/
-    ├── main_window.h / .cpp            # 主窗口（组合根）
-    ├── data/                           # 数据层：数据结构 + 持久化
-    │   ├── models.h                    #   数据结构定义（WordEntry, PracticeRecord 等）
-    │   └── word_database.h / .cpp      #   数据持久化（CRUD + JSON 序列化）
-    ├── core/                           # 业务逻辑层
-    │   ├── word_selection.h / .cpp     #   加权随机选词算法
-    │   └── practice_session.h / .cpp   #   练习会话状态机
-    ├── models/                         # Model/View 层
-    │   ├── word_list_model.h / .cpp    #   单词列表 QAbstractListModel
-    │   └── practice_record_model.h/.cpp#   练习记录 QAbstractListModel
-    └── widgets/                        # 视图层：UI 组件
-        ├── definition_editor_widget.h/.cpp  # 释义编辑器（可复用组件）
-        ├── practice_result_delegate.h/.cpp  # 练习结果自定义委托
-        ├── word_input_widget.h / .cpp       # 单词录入表单
-        ├── word_list_widget.h / .cpp        # 单词列表（搜索 + 排序 + 右键菜单）
-        ├── edit_word_dialog.h / .cpp        # 编辑单词对话框
-        ├── practice_widget.h / .cpp         # 练习界面
-        ├── practice_record_widget.h / .cpp  # 练习记录列表 + 练习配置
-        └── practice_record_detail.h / .cpp  # 练习记录详情窗口
+├── CMakeLists.txt                      # 根配置：项目设置 + add_subdirectory
+├── resources/                          # 资源文件
+│   ├── resources.qrc                   #   Qt 资源文件
+│   ├── styles/
+│   │   └── main.qss                    #   主样式表
+│   └── icons/                          #   图标资源
+├── app/                                # 主程序（可执行文件）
+│   ├── CMakeLists.txt
+│   ├── main.cpp                        # 程序入口
+│   └── main_window.h / .cpp            # 主窗口（组合根）
+├── db/                                 # 数据库模块库
+│   ├── CMakeLists.txt
+│   ├── include/data/
+│   │   ├── models.h                    #   数据结构定义（WordEntry, PracticeRecord 等）
+│   │   └── word_database.h             #   数据持久化接口
+│   └── src/
+│       └── word_database.cpp           #   数据持久化（CRUD + JSON 序列化）
+├── core/                               # 核心业务逻辑库
+│   ├── CMakeLists.txt
+│   ├── include/core/
+│   │   ├── word_selection.h            #   加权随机选词算法
+│   │   └── practice_session.h          #   练习会话状态机
+│   └── src/
+│       ├── word_selection.cpp
+│       └── practice_session.cpp
+├── models/                             # Model/View 层库
+│   ├── CMakeLists.txt
+│   ├── include/models/
+│   │   ├── word_list_model.h           #   单词列表 QAbstractListModel
+│   │   └── practice_record_model.h     #   练习记录 QAbstractListModel
+│   └── src/
+│       ├── word_list_model.cpp
+│       └── practice_record_model.cpp
+├── widgets/                            # 视图层：UI 组件库
+│   ├── CMakeLists.txt
+│   ├── include/widgets/
+│   │   ├── definition_editor_widget.h  #   释义编辑器（可复用组件）
+│   │   ├── practice_result_delegate.h  #   练习结果自定义委托
+│   │   ├── word_input_widget.h         #   单词录入表单
+│   │   ├── word_list_widget.h          #   单词列表（搜索 + 排序 + 右键菜单）
+│   │   ├── edit_word_dialog.h          #   编辑单词对话框
+│   │   ├── practice_widget.h           #   练习界面
+│   │   ├── practice_record_widget.h    #   练习记录列表 + 练习配置
+│   │   └── practice_record_detail.h    #   练习记录详情窗口
+│   └── src/                            # 对应 .cpp 实现
+└── tests/                              # 单元测试
+    ├── CMakeLists.txt
+    └── test_word_selection.cpp         # 选词算法测试
 ```
+
+各模块通过 `add_subdirectory()` 纳入构建，模块间依赖关系在各自
+`CMakeLists.txt` 中用 `target_link_libraries` 声明：
+
+-   `db` → `Qt::Core`
+-   `core` → `db`（PUBLIC）、`Qt::Core`
+-   `models` → `db`（PUBLIC）、`Qt::Core`
+-   `widgets` → `db`（PUBLIC）、`core` / `models`（PRIVATE）、`Qt::Widgets`
+-   `app` → `core` / `db` / `models` / `widgets`（PRIVATE）、`Qt::Widgets`
 
 ## 技术栈
 

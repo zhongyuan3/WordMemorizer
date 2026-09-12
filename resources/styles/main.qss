@@ -62,7 +62,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(:/icons/dropdown.png);
+    image: url(:/resources/icons/dropdown.png);
     width: 16px;
     height: 16px;
 }
@@ -90,17 +90,17 @@ QSpinBox::up-button {
     height: 12px;
     border: none;
     background: transparent;
-    image: url(:/icons/up_arrow_normal.png);
+    image: url(:/resources/icons/up_arrow_normal.png);
     margin-top: 2px;
     margin-right: 2px;
 }
 
 QSpinBox::up-button:hover {
-    image: url(:/icons/up_arrow_hover.png);
+    image: url(:/resources/icons/up_arrow_hover.png);
 }
 
 QSpinBox::up-button:pressed {
-    image: url(:/icons/up_arrow_pressed.png);
+    image: url(:/resources/icons/up_arrow_pressed.png);
 }
 
 QSpinBox::down-button {
@@ -110,17 +110,17 @@ QSpinBox::down-button {
     height: 12px;
     border: none;
     background: transparent;
-    image: url(:/icons/down_arrow_normal.png);
+    image: url(:/resources/icons/down_arrow_normal.png);
     margin-bottom: 2px;
     margin-right: 2px;
 }
 
 QSpinBox::down-button:hover {
-    image: url(:/icons/down_arrow_hover.png);
+    image: url(:/resources/icons/down_arrow_hover.png);
 }
 
 QSpinBox::down-button:pressed {
-    image: url(:/icons/down_arrow_pressed.png);
+    image: url(:/resources/icons/down_arrow_pressed.png);
 }
 
 /* ---- 按钮（渐变主样式） ---- */

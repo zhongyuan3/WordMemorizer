@@ -24,7 +24,7 @@
 #include "widgets/word_input_widget.h"
 #include "widgets/word_list_widget.h"
 
-static constexpr const char *STYLE_FILE_PATH = ":/styles/main.qss";
+static constexpr const char *STYLE_FILE_PATH = ":/resources/styles/main.qss";
 static constexpr const char *DATA_FILE_NAME = "words.json";
 static constexpr const char *PRACTICE_RECORDS_FILE_NAME =
     "practice_records.json";
@@ -51,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     m_recordModel->refreshAll();
 
     setWindowTitle("单词记忆助手");
-    setWindowIcon(QIcon(":/icons/logo.png"));
+    setWindowIcon(QIcon(":/resources/icons/logo.png"));
     setMinimumSize(900, 600);
     updateStatusBar();
 }

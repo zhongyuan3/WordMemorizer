@@ -2,7 +2,7 @@
 
 #include "main_window.h"
 
-static constexpr const char *LOGO_PATH = ":/icons/logo.png";
+static constexpr const char *LOGO_PATH = ":/resources/icons/logo.png";
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
