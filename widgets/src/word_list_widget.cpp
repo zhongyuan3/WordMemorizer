@@ -14,7 +14,6 @@
 #include <QVBoxLayout>
 
 #include "models/word_list_model.h"
-#include "widgets/word_list_delegate.h"
 
 WordListWidget::WordListWidget(QWidget *parent)
     : QWidget(parent), m_proxyModel(nullptr) {
@@ -47,12 +46,11 @@ WordListWidget::WordListWidget(QWidget *parent)
     m_listView->setSelectionMode(QAbstractItemView::SingleSelection);
     m_listView->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_listView->setContextMenuPolicy(Qt::CustomContextMenu);
-    m_listView->setItemDelegate(new WordListDelegate(this));
     m_listView->setMouseTracking(true);
 
     // ---- 单词计数标签 ----
     m_countLabel = new QLabel;
-    m_countLabel->setObjectName("m_wordCountLabel");
+    m_countLabel->setObjectName("wordCountLabel");
 
     // ---- 右键菜单 ----
     m_contextMenu = new QMenu(this);

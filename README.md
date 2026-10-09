@@ -82,7 +82,6 @@ WordMemorizer 是一款基于 Qt 框架开发的单词记忆辅助工具，帮�
 │   ├── CMakeLists.txt
 │   ├── include/widgets/
 │   │   ├── definition_editor_widget.h  #   释义编辑器（可复用组件）
-│   │   ├── practice_result_delegate.h  #   练习结果自定义委托
 │   │   ├── word_input_widget.h         #   单词录入表单
 │   │   ├── word_list_widget.h          #   单词列表（搜索 + 排序 + 右键菜单）
 │   │   ├── edit_word_dialog.h          #   编辑单词对话框

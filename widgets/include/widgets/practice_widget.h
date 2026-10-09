@@ -8,7 +8,6 @@ class QLineEdit;
 class QListView;
 class QPushButton;
 class QStandardItemModel;
-class PracticeResultDelegate;
 class PracticeSession;
 
 /**
@@ -51,7 +50,6 @@ private:
     QPushButton *m_exitButton;
     QLabel *m_accuracyLabel;
     QListView *m_resultsList;
-    PracticeResultDelegate *m_delegate;
     QStandardItemModel *m_resultsModel;
     PracticeSession *m_session = nullptr;
 };

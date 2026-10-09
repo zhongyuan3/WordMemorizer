@@ -10,24 +10,27 @@
 #include <QVBoxLayout>
 #include <climits>
 
+#include "widgets/theme.h"
+
 PracticeRecordWidget::PracticeRecordWidget(QWidget *parent) : QWidget(parent) {
     // ---- 练习记录列表 ----
     m_recordList = new QListView;
-    m_recordList->setObjectName("m_practiceRecordListWidget");
+    m_recordList->setObjectName("practiceRecordView");
 
     // ---- 练习配置 ----
     m_modeCombo = new QComboBox;
-    m_modeCombo->setObjectName("m_practiceModeCombo");
+    m_modeCombo->setObjectName("practiceModeCombo");
     m_modeCombo->addItem("给出单词，填写释义");
     m_modeCombo->addItem("给出释义，填写单词");
 
     m_countSpin = new QSpinBox;
-    m_countSpin->setObjectName("m_wordCountSpin");
+    m_countSpin->setObjectName("practiceCountSpin");
     m_countSpin->setRange(1, INT_MAX);
     m_countSpin->setValue(5);
 
     m_startButton = new QPushButton("开始练习");
-    m_startButton->setObjectName("m_startPracticeButton");
+    m_startButton->setObjectName("startPracticeButton");
+    Theme::setVariant(m_startButton, Theme::Variant::Primary);
 
     QHBoxLayout *optionsLayout = new QHBoxLayout;
     optionsLayout->setSpacing(10);

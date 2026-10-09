@@ -7,13 +7,14 @@
 #include <QSpinBox>
 
 #include "widgets/definition_editor_widget.h"
+#include "widgets/theme.h"
 
 WordInputWidget::WordInputWidget(QWidget *parent) : QWidget(parent) {
     m_wordEdit = new QLineEdit;
-    m_wordEdit->setObjectName("m_wordEdit");
+    m_wordEdit->setObjectName("wordInputEdit");
 
     m_prioritySpin = new QSpinBox;
-    m_prioritySpin->setObjectName("m_prioritySpin");
+    m_prioritySpin->setObjectName("priorityInputSpin");
     m_prioritySpin->setRange(1, 20);
     m_prioritySpin->setValue(1);
 
@@ -21,10 +22,12 @@ WordInputWidget::WordInputWidget(QWidget *parent) : QWidget(parent) {
     m_definitionEditor->setPlaceholder("输入释义后点击添加");
 
     m_addButton = new QPushButton("添加单词");
-    m_addButton->setObjectName("m_addButton");
+    m_addButton->setObjectName("addWordButton");
+    Theme::setVariant(m_addButton, Theme::Variant::Success);
 
     m_deleteButton = new QPushButton("删除选中单词");
-    m_deleteButton->setObjectName("m_deleteButton");
+    m_deleteButton->setObjectName("deleteWordButton");
+    Theme::setVariant(m_deleteButton, Theme::Variant::Danger);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->setSpacing(10);

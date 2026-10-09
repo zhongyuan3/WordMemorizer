@@ -11,7 +11,6 @@
 #include <QSortFilterProxyModel>
 #include <QStandardPaths>
 #include <QStatusBar>
-#include <QTextStream>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -21,10 +20,10 @@
 #include "widgets/practice_record_detail.h"
 #include "widgets/practice_record_widget.h"
 #include "widgets/practice_widget.h"
+#include "widgets/theme.h"
 #include "widgets/word_input_widget.h"
 #include "widgets/word_list_widget.h"
 
-static constexpr const char *STYLE_FILE_PATH = ":/resources/styles/main.qss";
 static constexpr const char *DATA_FILE_NAME = "words.json";
 static constexpr const char *PRACTICE_RECORDS_FILE_NAME =
     "practice_records.json";
@@ -145,15 +144,12 @@ void MainWindow::setupUi() {
 }
 
 void MainWindow::setupStyle() {
-    QFile styleFile(STYLE_FILE_PATH);
-    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
-        QTextStream stream(&styleFile);
-        QString sheet = stream.readAll();
-        qApp->setStyleSheet(sheet);
-        styleFile.close();
-    } else {
+    const QString sheet = Theme::styleSheet();
+    if (sheet.isEmpty()) {
         QMessageBox::critical(this, "错误", "无法加载样式表");
+        return;
     }
+    qApp->setStyleSheet(sheet);
 }
 
 void MainWindow::setupConnections() {

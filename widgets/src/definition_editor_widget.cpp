@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "widgets/theme.h"
+
 DefinitionEditorWidget::DefinitionEditorWidget(QWidget *parent)
     : QWidget(parent) {
     m_input = new QLineEdit;
@@ -13,6 +15,7 @@ DefinitionEditorWidget::DefinitionEditorWidget(QWidget *parent)
 
     m_addButton = new QPushButton("添加释义");
     m_addButton->setObjectName("addDefinitionButton");
+    Theme::setVariant(m_addButton, Theme::Variant::Success);
 
     QHBoxLayout *inputLayout = new QHBoxLayout;
     inputLayout->setSpacing(8);
@@ -24,6 +27,7 @@ DefinitionEditorWidget::DefinitionEditorWidget(QWidget *parent)
 
     m_removeButton = new QPushButton("删除选中的释义");
     m_removeButton->setObjectName("removeDefinitionButton");
+    Theme::setVariant(m_removeButton, Theme::Variant::Danger);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);

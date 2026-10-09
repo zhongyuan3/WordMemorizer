@@ -11,15 +11,16 @@
 #include <QVBoxLayout>
 
 #include "core/practice_session.h"
-#include "widgets/practice_result_delegate.h"
+#include "widgets/theme.h"
 
 PracticeWidget::PracticeWidget(QWidget *parent) : QWidget(parent) {
     // ---- 顶部：计时器 + 退出按钮 ----
     m_timerLabel = new QLabel("练习时间: 00:00");
-    m_timerLabel->setObjectName("m_practiceTimerLabel");
+    m_timerLabel->setObjectName("practiceTimerLabel");
 
     m_exitButton = new QPushButton("退出练习");
-    m_exitButton->setObjectName("m_exitPracticeButton");
+    m_exitButton->setObjectName("exitPracticeButton");
+    Theme::setVariant(m_exitButton, Theme::Variant::Danger);
 
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->setSpacing(10);
@@ -29,18 +30,19 @@ PracticeWidget::PracticeWidget(QWidget *parent) : QWidget(parent) {
 
     // ---- 题目 ----
     m_questionLabel = new QLabel;
-    m_questionLabel->setObjectName("m_questionLabel");
+    m_questionLabel->setObjectName("questionLabel");
     m_questionLabel->setWordWrap(true);
     m_questionLabel->setAlignment(Qt::AlignCenter);
 
     // ---- 答案输入 + 提交 ----
     m_answerEdit = new QLineEdit;
-    m_answerEdit->setObjectName("m_answerEdit");
+    m_answerEdit->setObjectName("answerInput");
     m_answerEdit->setReadOnly(true);
     m_answerEdit->setPlaceholderText("在此输入答案...");
 
     m_submitButton = new QPushButton("提交");
-    m_submitButton->setObjectName("m_submitButton");
+    m_submitButton->setObjectName("submitAnswerButton");
+    Theme::setVariant(m_submitButton, Theme::Variant::Primary);
     m_submitButton->setEnabled(false);
 
     QHBoxLayout *inputLayout = new QHBoxLayout;
@@ -50,17 +52,14 @@ PracticeWidget::PracticeWidget(QWidget *parent) : QWidget(parent) {
 
     // ---- 正确率 ----
     m_accuracyLabel = new QLabel;
-    m_accuracyLabel->setObjectName("m_practiceAccuracyLabel");
+    m_accuracyLabel->setObjectName("practiceAccuracyLabel");
 
     // ---- 结果列表 ----
     m_resultsModel = new QStandardItemModel(this);
 
     m_resultsList = new QListView;
-    m_resultsList->setObjectName("m_practiceWordsListWidget");
+    m_resultsList->setObjectName("practiceResultsView");
     m_resultsList->setModel(m_resultsModel);
-
-    m_delegate = new PracticeResultDelegate(this);
-    m_resultsList->setItemDelegate(m_delegate);
 
     // ---- 主布局 ----
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -120,12 +119,16 @@ void PracticeWidget::onAnswerSubmitted(bool correct,
     m_submitButton->setEnabled(false);
     m_answerEdit->setReadOnly(true);
 
-    // 在结果列表中添加一行，用 UserRole 标记正误（true 表示错误 -> 红色）
+    // 在结果列表中添加一行，用模型角色着色（正确=绿，错误=红）。
+    // 颜色取自 Theme，与 QSS 共用同一套设计 token；无需自定义委托。
     QString word = m_session ? m_session->currentWord() : QString();
     QString text = QString("%1 - %2").arg(word).arg(correctAnswer);
 
     QStandardItem *item = new QStandardItem(text);
-    item->setData(!correct, Qt::UserRole);
+    item->setBackground(Theme::qcolor(correct ? Theme::Color::SuccessSoft
+                                              : Theme::Color::DangerSoft));
+    item->setForeground(Theme::qcolor(correct ? Theme::Color::Success
+                                              : Theme::Color::Danger));
     m_resultsModel->appendRow(item);
 
     // 延迟 1 秒后跳到下一题，给用户时间查看正确答案

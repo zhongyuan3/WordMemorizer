@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 
 #include "widgets/definition_editor_widget.h"
+#include "widgets/theme.h"
 
 EditWordDialog::EditWordDialog(QWidget *parent) : QDialog(parent) {
     setWindowTitle("编辑单词");
@@ -24,10 +25,10 @@ EditWordDialog::EditWordDialog(QWidget *parent) : QDialog(parent) {
     wordFormLayout->setSpacing(10);
 
     m_wordInput = new QLineEdit;
-    m_wordInput->setObjectName("m_editWordInput");
+    m_wordInput->setObjectName("editWordInput");
 
     m_prioritySpin = new QSpinBox;
-    m_prioritySpin->setObjectName("m_editPrioritySpin");
+    m_prioritySpin->setObjectName("editPrioritySpin");
     m_prioritySpin->setRange(1, 20);
     m_prioritySpin->setValue(1);
 
@@ -50,10 +51,12 @@ EditWordDialog::EditWordDialog(QWidget *parent) : QDialog(parent) {
     buttonLayout->setSpacing(10);
 
     m_saveButton = new QPushButton("保存");
-    m_saveButton->setObjectName("m_editSaveButton");
+    m_saveButton->setObjectName("editSaveButton");
+    Theme::setVariant(m_saveButton, Theme::Variant::Success);
 
     m_cancelButton = new QPushButton("取消");
-    m_cancelButton->setObjectName("m_editCancelButton");
+    m_cancelButton->setObjectName("editCancelButton");
+    Theme::setVariant(m_cancelButton, Theme::Variant::Danger);
 
     buttonLayout->addWidget(m_saveButton);
     buttonLayout->addWidget(m_cancelButton);

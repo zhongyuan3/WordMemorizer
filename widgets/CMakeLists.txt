@@ -7,14 +7,12 @@ add_library(wm_widgets STATIC
     src/practice_record_detail.cpp
     include/widgets/practice_record_widget.h
     src/practice_record_widget.cpp
-    include/widgets/practice_result_delegate.h
-    src/practice_result_delegate.cpp
     include/widgets/practice_widget.h
     src/practice_widget.cpp
+    include/widgets/theme.h
+    src/theme.cpp
     include/widgets/word_input_widget.h
     src/word_input_widget.cpp
-    include/widgets/word_list_delegate.h
-    src/word_list_delegate.cpp
     include/widgets/word_list_widget.h
     src/word_list_widget.cpp
 )
@@ -30,5 +28,5 @@ target_link_libraries(wm_widgets PUBLIC
 
 target_link_libraries(wm_widgets PRIVATE
     wm_core                    # practice_widget.cpp 使用 PracticeSession
-    wm_models                  # word_list_widget/delegate 使用 WordListModel
+    wm_models                  # word_list_widget 使用 WordListModel
 )
